@@ -33,7 +33,7 @@ Configure the Quick Pane shortcut in **Preferences → Keyboard Shortcuts**.
 Press **Cmd+,** to open preferences:
 
 - **Theme**: Light, Dark, or System
-- **Language**: Select your preferred language
+- **Language**: Select English, Chinese, or System Default
 - **Keyboard Shortcuts**: Customize the Quick Pane shortcut
 
 ### Native Menus

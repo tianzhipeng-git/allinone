@@ -9,14 +9,14 @@ This app uses [react-i18next](https://react.i18next.com/) for internationalizati
 - **react-i18next**: Industry-standard React i18n library with excellent TypeScript support
 - **JSON translation files**: Simple, portable format stored in `/locales/`
 - **JavaScript-based native menus**: Menus are built from JavaScript (not Rust) to use the same translation system
-- **RTL support**: CSS uses logical properties for automatic RTL layout
+- **Locale-ready layout**: CSS should use logical properties so future RTL languages can be added safely
 
 ## Architecture
 
 ```
 /locales/
 ├── en.json              # English (default)
-├── ar.json              # Arabic (RTL example)
+├── zh.json              # Chinese
 └── [lang].json          # Additional languages
 
 /src/i18n/
@@ -60,7 +60,7 @@ function MyComponent() {
 
 ### Step 3: Add to Other Languages
 
-Add the same keys to all other language files (e.g., `/locales/ar.json`).
+Add the same keys to all other language files (currently `/locales/zh.json`).
 
 ## Key Naming Conventions
 
@@ -137,12 +137,12 @@ Update `/src/i18n/config.ts`:
 
 ```typescript
 import en from '../../locales/en.json'
-import ar from '../../locales/ar.json'
+import zh from '../../locales/zh.json'
 import es from '../../locales/es.json' // NEW
 
 const resources = {
   en: { translation: en },
-  ar: { translation: ar },
+  zh: { translation: zh },
   es: { translation: es }, // NEW
 }
 ```
@@ -156,6 +156,8 @@ const rtlLanguages = ['ar', 'he', 'fa', 'ur'] // Add your RTL language
 ```
 
 ## RTL Language Support
+
+The app currently ships with English (`en`) and Chinese (`zh`), both LTR languages. Keep new UI code RTL-ready by using logical CSS properties; if an RTL language is added later, register it in `rtlLanguages`.
 
 ### Automatic Direction Switching
 
@@ -299,14 +301,16 @@ const text = t('menu.about', { appName: 'My App' })
 
 // Or use i18n directly
 const currentLanguage = i18n.language
-await i18n.changeLanguage('ar')
+await i18n.changeLanguage('zh')
 ```
 
-## Testing with RTL
+## Testing Language Changes
 
-To test RTL layout:
+To test the current language flow:
 
 1. Open Preferences > Appearance
-2. Change language to Arabic (ar)
-3. Verify layout mirrors correctly
-4. Check all text alignment uses logical properties
+2. Change language to Chinese (`zh`)
+3. Verify React UI and native menus update
+4. Switch back to English (`en`) or System Default
+
+If adding an RTL language, also verify the layout mirrors correctly and all text alignment uses logical properties.

@@ -2,15 +2,7 @@
 
 A personal desktop application for tzp that brings everyday tools and workflows into one place. It is built with **Tauri v2**, **React**, and **TypeScript**, and keeps the template's strong architecture, testing, and release foundations.
 
-## Why This Template?
-
-Most Tauri starters give you a blank canvas. This template gives you a **working application** with patterns already established:
-
-- **Type-safe Rust-TypeScript bridge** via tauri-specta.
-- **Performance patterns enforced by tooling** - all the usual linting plus ast-grep for common anti-patterns
-- **Multi-window architecture** already working (quick pane with global shortcut as a demo)
-- **Cross-platform ready** with platform-specific title bars, window controls, and native menu integration
-- **i18n built-in** with RTL support
+This project is scaffold‌ from a [template](https://github.com/dannysmith/tauri-template/).
 
 ## Stack
 
@@ -86,22 +78,6 @@ This template is designed to work well with AI coding agents like Claude Code:
 - **Comprehensive documentation** in `docs/developer/` covering all patterns. Human readable but really designed to explain the "why" of certain patterns to AI agents. Not slop.
 - **Claude Code integration** - Custom commands (`/check`, `/cleanup`) and a couple of specialized agents
 - **Sensible file organization** - React code in `src/` with clear separation (components, hooks, stores, services), Rust in `src-tauri/src/` with modular command organization. Predictable structure for both humans and AI.
-
-## Getting Started
-
-See **[Using This Template](docs/USING_THIS_TEMPLATE.md)** for setup instructions and workflow guidance.
-
-### Quick Start
-
-```bash
-# Prerequisites: Node.js 18+, Rust (latest stable)
-# See https://tauri.app/start/prerequisites/ for platform-specific deps
-
-git clone <your-repo>
-cd your-app
-pnpm install
-pnpm run dev
-```
 
 ## Documentation
 
