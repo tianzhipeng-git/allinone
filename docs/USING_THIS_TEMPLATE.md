@@ -18,7 +18,7 @@ Then clone this template and install dependencies:
 ```bash
 git clone <your-repo-url>
 cd <your-project>
-npm install
+pnpm install
 ```
 
 ## Quick Setup (Claude Code)
@@ -32,7 +32,7 @@ If you're using Claude Code, run the `/init` command:
 This will prompt you for your app name and description, then automatically update all configuration files. Once complete, verify everything works:
 
 ```bash
-npm run tauri:dev
+pnpm run tauri:dev
 ```
 
 ## Manual Setup
@@ -44,14 +44,14 @@ If you're not using Claude Code, update these files manually:
 | File                            | Fields to Update                                                               |
 | ------------------------------- | ------------------------------------------------------------------------------ |
 | `package.json`                  | `name`, `description`                                                          |
-| `src/index.html`                | `<title>` tag                                                                  |
+| `index.html`                    | `<title>` tag                                                                  |
 | `src-tauri/tauri.conf.json`     | `productName`, `identifier`, `windows[0].title`, bundle info, updater endpoint |
 | `src-tauri/Cargo.toml`          | `name`, `description`, `authors`                                               |
 | `.github/workflows/release.yml` | Workflow name, release name                                                    |
 | `AGENTS.md`                     | Overview section with app name/description                                     |
 | `README.md`                     | Replace template references with your app                                      |
-| `docs/SECURITY.md`              | Replace `YOUR_SECURITY_EMAIL` placeholder                                      |
-| `docs/CONTRIBUTING.md`          | Replace `YOUR_USERNAME/YOUR_REPO` placeholder                                  |
+| `docs/SECURITY.md`              | Set the security contact                                                       |
+| `docs/CONTRIBUTING.md`          | Set the GitHub repository path                                                 |
 
 ### Identifier Format
 
@@ -66,8 +66,8 @@ gh api user --jq .login
 ### Verify Setup
 
 ```bash
-npm run check:all
-npm run tauri:dev
+pnpm run check:all
+pnpm run tauri:dev
 ```
 
 ## Example AI Workflow
@@ -83,7 +83,7 @@ Create a task document in `docs/tasks-todo/` describing what you want to build. 
 Build the feature, running quality checks periodically:
 
 ```bash
-npm run check:all
+pnpm run check:all
 ```
 
 This runs TypeScript, ESLint, Prettier, Rust checks, and tests in one command.
@@ -101,7 +101,7 @@ Ask the AI to update relevant developer docs in `docs/developer/` and the user g
 Move the task document to mark it done:
 
 ```bash
-npm run task:complete <task-name>
+pnpm run task:complete <task-name>
 ```
 
 ## Setting Up GitHub Releases
@@ -111,7 +111,7 @@ To enable automated builds and auto-updates via GitHub Actions:
 ### 1. Generate Signing Keys
 
 ```bash
-npm install -g @tauri-apps/cli
+pnpm add -g @tauri-apps/cli
 tauri signer generate -w ~/.tauri/myapp.key
 ```
 
@@ -142,7 +142,7 @@ See [docs/developer/releases.md](developer/releases.md) for the full release pro
 
 ## Next Steps
 
-1. **Try the app**: `npm run tauri:dev`
+1. **Try the app**: `pnpm run tauri:dev`
 2. **Explore features**: Open command palette (Cmd+K), check preferences (Cmd+,)
 3. **Read the docs**: Start with [docs/developer/architecture-guide.md](developer/architecture-guide.md)
 4. **Set up releases**: Follow the GitHub Releases section above if using CI/CD

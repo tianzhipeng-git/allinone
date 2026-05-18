@@ -5,10 +5,10 @@ Testing patterns for Rust and TypeScript, with focus on Tauri-specific mocking.
 ## Running Tests
 
 ```bash
-npm run check:all      # All tests and checks
-npm run test           # TypeScript tests (watch mode)
-npm run test:run       # TypeScript tests (single run)
-npm run rust:test      # Rust tests
+pnpm run check:all      # All tests and checks
+pnpm run test           # TypeScript tests (watch mode)
+pnpm run test:run       # TypeScript tests (single run)
+pnpm run rust:test      # Rust tests
 ```
 
 ## TypeScript Testing

@@ -1,20 +1,20 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "allinone",
   "version": "0.1.0",
-  "identifier": "com.tauri-app.app",
+  "identifier": "com.tianzhipeng-git.allinone",
   "build": {
     "removeUnusedCommands": true,
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "pnpm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "pnpm run build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
         "label": "main",
-        "title": "tauri-app",
+        "title": "allinone",
         "width": 1200,
         "height": 800,
         "minWidth": 1000,
@@ -46,11 +46,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "publisher": "Your Name",
+    "publisher": "tianzhipeng-git",
     "category": "DeveloperTool",
-    "shortDescription": "A Tauri React template application",
-    "longDescription": "A modern Tauri React template with comprehensive boilerplate code, TypeScript, Tailwind CSS, and shadcn/ui components.",
-    "copyright": "Copyright © 2025 Your Name. All rights reserved.",
+    "shortDescription": "A personal desktop application for tzp.",
+    "longDescription": "A personal desktop application for tzp that brings everyday tools and workflows into one place.",
+    "copyright": "Copyright © 2026 tianzhipeng-git. All rights reserved.",
     "macOS": {
       "frameworks": [],
       "minimumSystemVersion": "10.15",
@@ -64,7 +64,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/latest.json"
+        "https://github.com/tianzhipeng-git/allinone/releases/latest/download/latest.json"
       ],
       "dialog": true,
       "pubkey": "YOUR_UPDATER_PUBLIC_KEY_HERE"

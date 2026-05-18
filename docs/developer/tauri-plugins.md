@@ -200,7 +200,7 @@ These plugins aren't included by default but are commonly needed:
 1. **Install via CLI**:
 
    ```bash
-   npm run tauri add PLUGIN_NAME
+   pnpm run tauri add PLUGIN_NAME
    ```
 
 2. **Check placement** in `lib.rs`:
@@ -223,6 +223,6 @@ The order plugins are registered matters:
 ## References
 
 - [Tauri v2 Plugin Documentation](https://v2.tauri.app/plugin/)
-- [Official Plugins Repository](https://github.com/tauri-apps/plugins-workspace)
+- [Official Plugins Repository](https://github.com/allinones/plugins-workspace)
 - [Window State Plugin](https://v2.tauri.app/plugin/window-state/)
 - [Single Instance Plugin](https://v2.tauri.app/plugin/single-instance/)

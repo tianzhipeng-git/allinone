@@ -1,6 +1,6 @@
-# Tauri React Template
+# allinone
 
-A "batteries-included" template for building production-ready desktop applications with **Tauri v2**, **React**, and **TypeScript**. Designed with opinionated patterns that help both human developers and AI coding agents build well-architected apps from the start.
+A personal desktop application for tzp that brings everyday tools and workflows into one place. It is built with **Tauri v2**, **React**, and **TypeScript**, and keeps the template's strong architecture, testing, and release foundations.
 
 ## Why This Template?
 
@@ -61,7 +61,7 @@ Platform detection utilities, platform-specific UI strings ("Reveal in Finder" v
 
 - **Type-safe Tauri commands** - tauri-specta generates TypeScript bindings from Rust, with full autocomplete and compile-time checking
 - **Static analysis** - ESLint, Prettier, ast-grep (architecture enforcement), knip (unused code), jscpd (duplication)
-- **Single quality gate** - `npm run check:all` runs TypeScript, ESLint, Prettier, ast-grep, clippy, and all tests
+- **Single quality gate** - `pnpm run check:all` runs TypeScript, ESLint, Prettier, ast-grep, clippy, and all tests
 - **Testing patterns** - Vitest setup with Tauri command mocking
 
 ## Tauri Plugins Included
@@ -99,8 +99,8 @@ See **[Using This Template](docs/USING_THIS_TEMPLATE.md)** for setup instruction
 
 git clone <your-repo>
 cd your-app
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## Documentation

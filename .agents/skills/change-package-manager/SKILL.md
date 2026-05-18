@@ -71,15 +71,15 @@ Read `.github/workflows/release.yml` and apply the appropriate pattern:
 - Delete the old lock file (whichever of `package-lock.json`, `bun.lock`, `pnpm-lock.yaml` exists)
 - Run the target PM's install command to generate the new lock file
 
-## Step 3: AI Instructions & Claude Config
+## Step 3: AI Instructions & Codex Config
 
 Update these files, replacing PM commands contextually:
 
 - **`AGENTS.md`**: Update rule 0 (the "Use npm only" line) to reflect the new PM. For example: `0. **Use bun only**: This project uses \`bun\`, NOT \`npm\`. Always use \`bun install\`, \`bun run\`, etc.`
-- **`.claude/skills/init/SKILL.md`**: Replace PM commands in verification/next-steps sections
-- **`.claude/skills/check/SKILL.md`**: Replace PM commands
-- **`.claude/agents/cleanup-analyzer.md`**: Replace PM commands
-- **`.claude/settings.local.json`**: Update `Bash(npm ...)` permission patterns to use the new PM (e.g. `Bash(bun run format:*)`)
+- **`.Codex/skills/init/SKILL.md`**: Replace PM commands in verification/next-steps sections
+- **`.Codex/skills/check/SKILL.md`**: Replace PM commands
+- **`.Codex/agents/cleanup-analyzer.md`**: Replace PM commands
+- **`.Codex/settings.local.json`**: Update `Bash(npm ...)` permission patterns to use the new PM (e.g. `Bash(bun run format:*)`)
 
 ## Step 4: Documentation
 
