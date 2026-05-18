@@ -1,19 +1,19 @@
-# Using This Template
+# 使用此模板
 
-This document is specific to the template and should be deleted once you're comfortable with your new project.
+本文档仅适用于此模板，在您熟悉新项目后应将其删除。
 
-## Prerequisites
+## 前提条件
 
-Before you begin, install:
+在开始之前，请安装：
 
 - **Node.js** (v18+) - [nodejs.org](https://nodejs.org/)
-- **Rust** (latest stable) - [rustup.rs](https://rustup.rs/)
-- **Platform dependencies**:
+- **Rust** (最新稳定版) - [rustup.rs](https://rustup.rs/)
+- **平台依赖项**：
   - **macOS**: `xcode-select --install`
-  - **Windows**: [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-  - **Linux**: See [Tauri prerequisites](https://tauri.app/start/prerequisites/)
+  - **Windows**: [Microsoft C++ 生成工具](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+  - **Linux**: 参见 [Tauri 前提条件](https://tauri.app/start/prerequisites/)
 
-Then clone this template and install dependencies:
+然后克隆此模板并安装依赖：
 
 ```bash
 git clone <your-repo-url>
@@ -21,112 +21,112 @@ cd <your-project>
 pnpm install
 ```
 
-## Quick Setup (Claude Code)
+## 快速设置 (Claude Code)
 
-If you're using Claude Code, run the `/init` command:
+如果您使用的是 Claude Code，请运行 `/init` 命令：
 
 ```
 /init
 ```
 
-This will prompt you for your app name and description, then automatically update all configuration files. Once complete, verify everything works:
+这将提示您输入应用名称和描述，然后自动更新所有配置文件。完成后，验证一切是否正常运行：
 
 ```bash
 pnpm run tauri:dev
 ```
 
-## Manual Setup
+## 手动设置
 
-If you're not using Claude Code, update these files manually:
+如果您不使用 Claude Code，请手动更新这些文件：
 
-### Configuration Checklist
+### 配置检查清单
 
-| File                            | Fields to Update                                                               |
+| 文件                            | 需要更新的字段                                                                 |
 | ------------------------------- | ------------------------------------------------------------------------------ |
 | `package.json`                  | `name`, `description`                                                          |
-| `index.html`                    | `<title>` tag                                                                  |
-| `src-tauri/tauri.conf.json`     | `productName`, `identifier`, `windows[0].title`, bundle info, updater endpoint |
+| `index.html`                    | `<title>` 标签                                                                 |
+| `src-tauri/tauri.conf.json`     | `productName`, `identifier`, `windows[0].title`, 捆绑信息, 更新程序端点        |
 | `src-tauri/Cargo.toml`          | `name`, `description`, `authors`                                               |
-| `.github/workflows/release.yml` | Workflow name, release name                                                    |
-| `AGENTS.md`                     | Overview section with app name/description                                     |
-| `README.md`                     | Replace template references with your app                                      |
-| `docs/SECURITY.md`              | Set the security contact                                                       |
-| `docs/CONTRIBUTING.md`          | Set the GitHub repository path                                                 |
+| `.github/workflows/release.yml` | 工作流名称, 发布名称                                                           |
+| `AGENTS.md`                     | 包含应用名称/描述的概述部分                                                    |
+| `README.md`                     | 将模板引用替换为您的应用                                                       |
+| `docs/SECURITY.md`              | 设置安全联系人                                                                 |
+| `docs/CONTRIBUTING.md`          | 设置 GitHub 仓库路径                                                           |
 
-### Identifier Format
+### 标识符格式
 
-Use reverse domain notation: `com.yourusername.your-app-name`
+使用反向域名表示法：`com.yourusername.your-app-name`
 
-You can get your GitHub username with:
+您可以通过以下方式获取您的 GitHub 用户名：
 
 ```bash
 gh api user --jq .login
 ```
 
-### Verify Setup
+### 验证设置
 
 ```bash
 pnpm run check:all
 pnpm run tauri:dev
 ```
 
-## Example AI Workflow
+## 示例 AI 工作流
 
-This template includes workflow features designed for AI-assisted development. Here's an example workflow:
+此模板包含专为 AI 辅助开发设计的工作流功能。以下是一个示例工作流：
 
-### 1. Plan with Task Documents
+### 1. 使用任务文档进行规划
 
-Create a task document in `docs/tasks-todo/` describing what you want to build. Ask the AI to read relevant docs and help plan the implementation. Task documents help maintain context across sessions.
+在 `docs/tasks-todo/` 中创建一个任务文档，描述您想要构建的内容。让 AI 阅读相关文档并协助规划实施方案。任务文档有助于在不同会话之间保持上下文。
 
-### 2. Implement Iteratively
+### 2. 迭代实现
 
-Build the feature, running quality checks periodically:
+构建功能，并定期运行质量检查：
 
 ```bash
 pnpm run check:all
 ```
 
-This runs TypeScript, ESLint, Prettier, Rust checks, and tests in one command.
+这将通过一个命令运行 TypeScript、ESLint、Prettier、Rust 检查和测试。
 
-### 3. Check Before Finishing
+### 3. 完成前的检查
 
-In Claude Code, run `/check` before finishing a session. This verifies your work follows the architecture patterns in `docs/developer/` and cleans up any leftover debug code.
+在 Claude Code 中，在结束会话前运行 `/check`。这将验证您的工作是否符合 `docs/developer/` 中的架构模式，并清理任何残留的调试代码。
 
-### 4. Update Documentation
+### 4. 更新文档
 
-Ask the AI to update relevant developer docs in `docs/developer/` and the user guide in `docs/userguide/` to reflect new patterns or features.
+让 AI 更新 `docs/developer/` 中的相关开发者文档和 `docs/userguide/` 中的用户指南，以反映新的模式或功能。
 
-### 5. Complete the Task
+### 5. 完成任务
 
-Move the task document to mark it done:
+移动任务文档以将其标记为已完成：
 
 ```bash
 pnpm run task:complete <task-name>
 ```
 
-## Setting Up GitHub Releases
+## 设置 GitHub Releases
 
-To enable automated builds and auto-updates via GitHub Actions:
+要通过 GitHub Actions 启用自动构建和自动更新：
 
-### 1. Generate Signing Keys
+### 1. 生成签名密钥
 
 ```bash
 pnpm add -g @tauri-apps/cli
 tauri signer generate -w ~/.tauri/myapp.key
 ```
 
-Save the displayed public key for the next step.
+保存显示的公钥以供下一步使用。
 
-### 2. Add GitHub Secrets
+### 2. 添加 GitHub Secrets
 
-In your repository: Settings → Secrets and variables → Actions
+在您的仓库中：Settings → Secrets and variables → Actions
 
-- `TAURI_PRIVATE_KEY`: Contents of `~/.tauri/myapp.key`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: Your key password (if set)
+- `TAURI_PRIVATE_KEY`: `~/.tauri/myapp.key` 的内容
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: 您的密钥密码（如果已设置）
 
-### 3. Update Public Key
+### 3. 更新公钥
 
-Add your public key to `src-tauri/tauri.conf.json`:
+将您的公钥添加到 `src-tauri/tauri.conf.json` 中：
 
 ```json
 {
@@ -138,12 +138,12 @@ Add your public key to `src-tauri/tauri.conf.json`:
 }
 ```
 
-See [docs/developer/releases.md](developer/releases.md) for the full release process and auto-update system.
+请参阅 [docs/developer/releases.md](developer/releases.md) 了解完整的发布流程和自动更新系统。
 
-## Next Steps
+## 后续步骤
 
-1. **Try the app**: `pnpm run tauri:dev`
-2. **Explore features**: Open command palette (Cmd+K), check preferences (Cmd+,)
-3. **Read the docs**: Start with [docs/developer/architecture-guide.md](developer/architecture-guide.md)
-4. **Set up releases**: Follow the GitHub Releases section above if using CI/CD
-5. **Delete this file**: Once you're comfortable, remove `docs/USING_THIS_TEMPLATE.md`
+1. **尝试应用**：`pnpm run tauri:dev`
+2. **探索功能**：打开命令面板 (Cmd+K)，查看偏好设置 (Cmd+,)
+3. **阅读文档**：从 [docs/developer/architecture-guide.md](developer/architecture-guide.md) 开始
+4. **设置发布**：如果使用 CI/CD，请遵循上面的 GitHub Releases 部分
+5. **删除此文件**：一旦您熟悉了项目，请删除 `docs/USING_THIS_TEMPLATE.md`
