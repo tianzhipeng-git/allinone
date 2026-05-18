@@ -16,12 +16,21 @@ src-tauri/src/
 │   ├── notifications.rs
 │   ├── quick_pane.rs
 │   └── recovery.rs
+├── modules/         # First-party app module backends
+│   ├── mod.rs
+│   └── gtd/
+│       ├── commands.rs
+│       ├── storage.rs
+│       ├── types.rs
+│       └── mod.rs
 └── utils/           # Utility modules
     ├── mod.rs
     └── platform.rs  # Platform-specific helpers
 ```
 
 ## Adding New Commands
+
+Use `commands/` for app-wide domains such as preferences, notifications, recovery, and window-level actions. Use `modules/<module-id>/` when a command belongs to a first-party module and should stay near that module's storage and types.
 
 ### 1. Create or update a command module
 
@@ -80,6 +89,8 @@ pub struct MyData {
 ```
 
 **Note:** `#[derive(Type)]` from specta is required for TypeScript generation.
+
+Specta generates TypeScript `number` for ordinary numeric IDs. Prefer `i32` for IDs exposed to TypeScript. Avoid `i64` in command parameters or returned structs unless the frontend is explicitly designed to use `bigint`.
 
 ### Error Types
 
@@ -167,6 +178,7 @@ app_builder = app_builder
 When adding new features:
 
 1. **New command domain?** Create new file in `commands/`
-2. **New shared types?** Add to `types.rs`
-3. **Platform-specific utils?** Add to `utils/platform.rs`
-4. **New plugin?** Register in `lib.rs` setup
+2. **New first-party module backend?** Create `modules/<module-id>/`
+3. **New shared types?** Add to `types.rs`
+4. **Platform-specific utils?** Add to `utils/platform.rs`
+5. **New plugin?** Register in `lib.rs` setup

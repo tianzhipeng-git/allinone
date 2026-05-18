@@ -91,3 +91,5 @@ docs/.vitepress/cache/
 *.generated.*
 auto-imports.d.ts
 components.d.ts
+
+docs/for-human/

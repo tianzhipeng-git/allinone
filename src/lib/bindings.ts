@@ -142,6 +142,46 @@ async updateQuickPaneShortcut(shortcut: string | null) : Promise<Result<null, st
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async gtdGetTree() : Promise<Result<GtdTree, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_get_tree") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdCreateGroup(name: string, parentId: number | null) : Promise<Result<GtdGroup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_create_group", { name, parentId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdRegisterDocument(path: string, groupId: number, title: string | null) : Promise<Result<GtdDocument, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_register_document", { path, groupId, title }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdReadDocument(documentId: number) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_read_document", { documentId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdSaveDocument(documentId: number, content: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_save_document", { documentId, content }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -170,6 +210,9 @@ quick_pane_shortcut: string | null;
  * If None, uses system locale detection
  */
 language: string | null }
+export type GtdDocument = { id: number; group_id: number; title: string; path: string; markdown_heading: string | null; created_at: string; updated_at: string }
+export type GtdGroup = { id: number; parent_id: number | null; name: string; sort_order: number }
+export type GtdTree = { groups: GtdGroup[]; documents: GtdDocument[] }
 export type JsonValue = null | boolean | number | string | JsonValue[] | Partial<{ [key in string]: JsonValue }>
 /**
  * Error types for recovery operations (typed for frontend matching)

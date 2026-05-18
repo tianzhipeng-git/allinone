@@ -8,6 +8,7 @@ Technical documentation for building and extending this app. These docs describe
 | ----------------------------------------------- | ------------------------------------------------------- |
 | [Architecture Guide](./architecture-guide.md)   | High-level overview, mental models, system architecture |
 | [Module Architecture](./module-architecture.md) | Built-in app module boundaries and registration         |
+| [GTD Module](./gtd-module.md)                   | Global Todo module implementation and extension notes   |
 | [Rust Architecture](./rust-architecture.md)     | Rust module organization and patterns                   |
 | [State Management](./state-management.md)       | Three-layer state onion, Zustand, TanStack Query        |
 | [Error Handling](./error-handling.md)           | Error propagation, user feedback, retry patterns        |

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '@milkdown/crepe/theme/frame.css';
 @import './theme-variables.css';
 
 @custom-variant dark (&:is(.dark *));
@@ -62,5 +63,27 @@
   *[data-tauri-drag-region] {
     -webkit-app-region: drag;
     app-region: drag;
+  }
+
+  .gtd-crepe-editor {
+    --crepe-color-background: var(--background);
+    --crepe-color-on-background: var(--foreground);
+    --crepe-color-surface: var(--background);
+    --crepe-color-surface-low: var(--muted);
+    --crepe-color-on-surface: var(--foreground);
+    --crepe-color-outline: var(--border);
+    --crepe-color-primary: var(--primary);
+    --crepe-color-secondary: var(--secondary);
+    overflow: auto;
+  }
+
+  .gtd-crepe-editor .milkdown {
+    min-height: 100%;
+  }
+
+  .gtd-crepe-editor .ProseMirror {
+    min-height: calc(100vh - 7rem);
+    padding: 2rem max(2rem, calc((100% - 760px) / 2));
+    outline: none;
   }
 }

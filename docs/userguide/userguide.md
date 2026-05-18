@@ -18,6 +18,22 @@ Welcome! This guide covers the core features available in the app.
 
 ## Core Features
 
+### Global Todo
+
+Global Todo brings local project `todo.md` files into one place. Use it when you keep Markdown todo lists across different folders and want a single app-level view without moving those files.
+
+The left sidebar launches modules. Select **Global Todo** to open the GTD workspace.
+
+In Global Todo:
+
+- Use the right sidebar to browse GTD groups and registered Markdown files
+- Click the folder-plus button to create a nested group
+- Click the plus button to register an existing `.md` or `.markdown` file
+- Select a file to edit it in the main area
+- Click **Save** to write changes back to the original local Markdown file
+
+Groups are an app-level organization layer. They are separate from Markdown headings, though the first heading is stored as metadata to make files easier to identify.
+
 ### Command Palette
 
 Press **Cmd+K** to open the command palette - a quick way to find and run any action. Start typing to search through available commands.
@@ -48,9 +64,9 @@ All menu items have keyboard shortcuts and are also available in the command pal
 ## Layout
 
 - **Title Bar**: Window controls and app title
-- **Left Sidebar**: Collapsible panel (Cmd+1)
-- **Main Content**: Primary app content
-- **Right Sidebar**: Collapsible panel (Cmd+2)
+- **Left Sidebar**: Module launcher, collapsible with Cmd+1
+- **Main Content**: Active module content
+- **Right Sidebar**: Active module tools or navigation, collapsible with Cmd+2
 
 ## Updates
 

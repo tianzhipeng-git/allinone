@@ -34,12 +34,10 @@ The shell owns the frame. Modules own their own feature surface.
 
 ```
 src/
-├── app/                  # App shell glue: module rendering, navigation
 ├── modules/              # First-party built-in apps
 │   ├── registry.ts
 │   ├── types.ts
-│   ├── notes/
-│   ├── todos/
+│   ├── gtd/
 │   └── clipboard/
 ├── components/           # Shared UI components only
 ├── lib/                  # Shared infrastructure and command system
@@ -51,13 +49,15 @@ src/
 Each module should be self-contained:
 
 ```
-src/modules/todos/
+src/modules/gtd/
 ├── index.ts              # Exports the module definition
-├── TodosApp.tsx          # Main module surface
+├── GtdApp.tsx            # Main module surface
+├── GtdRightSidebar.tsx   # Optional module-owned right sidebar
 ├── commands.ts           # Module command palette actions
 ├── services.ts           # Query hooks and Tauri command wrappers
 ├── store.ts              # Module-local UI state, if needed
 ├── types.ts              # Module-local domain types
+├── tree.ts               # Pure business helpers
 ├── components/
 └── __tests__/
 ```
@@ -70,9 +70,11 @@ Use a static module registry. This keeps the app type-safe, tree-shakeable, and 
 export interface AppModule {
   id: string
   labelKey: string
+  shortLabel: string
   icon: LucideIcon
   order: number
   component: React.LazyExoticComponent<React.ComponentType>
+  rightSidebarComponent?: React.LazyExoticComponent<React.ComponentType>
   commands?: AppCommand[]
   settingsComponent?: React.ComponentType
 }
@@ -91,12 +93,13 @@ Module IDs are stable API. Use lowercase kebab-case (`todos`, `daily-notes`, `cl
 
 The app shell should use the registry as the single source of truth:
 
-| Shell Area           | Source                               |
-| -------------------- | ------------------------------------ |
-| Sidebar navigation   | `modules` registry                   |
-| Main content surface | Active module from registry          |
-| Command palette      | Global commands + module commands    |
-| Preferences          | Global panes + module settings panes |
+| Shell Area           | Source                                |
+| -------------------- | ------------------------------------- |
+| Sidebar navigation   | `modules` registry                    |
+| Main content surface | Active module from registry           |
+| Right sidebar        | Active module `rightSidebarComponent` |
+| Command palette      | Global commands + module commands     |
+| Preferences          | Global panes + module settings panes  |
 
 Global UI state can track the active module:
 
@@ -196,7 +199,7 @@ queryKey: ['module', 'notes', 'note', noteId]
 queryKey: ['items']
 ```
 
-For simple settings, use the preferences system. For relational or query-heavy user data, use SQLite when introduced, table name should be prefixed with the module ID. See [data-persistence.md](./data-persistence.md).
+For simple settings, use the preferences system. For relational or query-heavy user data, use SQLite through Rust command wrappers. Table names must be prefixed with the module ID, for example `gtd_groups` and `gtd_documents`. See [data-persistence.md](./data-persistence.md).
 
 ## Rust Organization
 
@@ -207,8 +210,9 @@ src-tauri/src/
 ├── commands/
 │   └── mod.rs
 ├── modules/
-│   ├── todos/
+│   ├── gtd/
 │   │   ├── commands.rs
+│   │   ├── storage.rs
 │   │   ├── types.rs
 │   │   └── mod.rs
 │   └── notes/
@@ -248,11 +252,14 @@ Use the module ID as the translation namespace under `modules`.
 1. Create `src/modules/<module-id>/`
 2. Add `index.ts` with the module definition
 3. Add the main module component
-4. Add module commands only when they should appear globally
-5. Add persistent data through typed Tauri commands when needed
-6. Register the module in `src/modules/registry.ts`
-7. Add translation keys in every locale file
-8. Add focused tests for business logic and module shell integration
+4. Add a right sidebar component when the module owns sidebar navigation or metadata
+5. Add module commands only when they should appear globally
+6. Add persistent data through typed Tauri commands when needed
+7. Prefix TanStack Query keys and SQLite tables with the module ID
+8. Register Rust commands in `src-tauri/src/bindings.rs` and run `pnpm run rust:bindings`
+9. Register the module in `src/modules/registry.ts`
+10. Add translation keys in every locale file
+11. Add focused tests for business logic and module shell integration
 
 ## Anti-Patterns
 

@@ -10,4 +10,5 @@ allowed-tools: [Read, Bash, Glob, Edit]
 1. Check all work in this session for adherence with `docs/developer/architecture-guide.md`.
 2. Remove any unnecessary comments or `console.log` statements introduced during development, and clean up any "leftovers" from approaches that didn't work.
 3. Run `pnpm run check:all` and fix any errors.
-4. Suggest a concise commit message summarizing the work done in this session.
+4. Update relevant developer documentation in `docs/developer/` and user guides in `docs/userguide/` to reflect new patterns or features.
+5. Suggest a concise commit message summarizing the work done in this session.

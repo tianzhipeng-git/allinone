@@ -2,6 +2,7 @@ use tauri_specta::{collect_commands, Builder};
 
 pub fn generate_bindings() -> Builder<tauri::Wry> {
     use crate::commands::{notifications, preferences, quick_pane, recovery};
+    use crate::modules::gtd;
 
     Builder::<tauri::Wry>::new().commands(collect_commands![
         preferences::greet,
@@ -16,6 +17,11 @@ pub fn generate_bindings() -> Builder<tauri::Wry> {
         quick_pane::toggle_quick_pane,
         quick_pane::get_default_quick_pane_shortcut,
         quick_pane::update_quick_pane_shortcut,
+        gtd::commands::gtd_get_tree,
+        gtd::commands::gtd_create_group,
+        gtd::commands::gtd_register_document,
+        gtd::commands::gtd_read_document,
+        gtd::commands::gtd_save_document,
     ])
 }
 

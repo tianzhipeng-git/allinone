@@ -7,6 +7,7 @@ describe('UIStore', () => {
     useUIStore.setState({
       leftSidebarVisible: true,
       rightSidebarVisible: true,
+      activeModuleId: 'gtd',
       commandPaletteOpen: false,
       preferencesOpen: false,
     })
@@ -16,8 +17,17 @@ describe('UIStore', () => {
     const state = useUIStore.getState()
     expect(state.leftSidebarVisible).toBe(true)
     expect(state.rightSidebarVisible).toBe(true)
+    expect(state.activeModuleId).toBe('gtd')
     expect(state.commandPaletteOpen).toBe(false)
     expect(state.preferencesOpen).toBe(false)
+  })
+
+  it('sets active module', () => {
+    const { setActiveModuleId } = useUIStore.getState()
+
+    setActiveModuleId('notes')
+
+    expect(useUIStore.getState().activeModuleId).toBe('notes')
   })
 
   it('toggles left sidebar visibility', () => {

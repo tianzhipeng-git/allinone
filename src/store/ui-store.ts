@@ -4,10 +4,12 @@ import { devtools } from 'zustand/middleware'
 interface UIState {
   leftSidebarVisible: boolean
   rightSidebarVisible: boolean
+  activeModuleId: string
   commandPaletteOpen: boolean
   preferencesOpen: boolean
   lastQuickPaneEntry: string | null
 
+  setActiveModuleId: (id: string) => void
   toggleLeftSidebar: () => void
   setLeftSidebarVisible: (visible: boolean) => void
   toggleRightSidebar: () => void
@@ -25,9 +27,13 @@ export const useUIStore = create<UIState>()(
     set => ({
       leftSidebarVisible: true,
       rightSidebarVisible: true,
+      activeModuleId: 'gtd',
       commandPaletteOpen: false,
       preferencesOpen: false,
       lastQuickPaneEntry: null,
+
+      setActiveModuleId: id =>
+        set({ activeModuleId: id }, undefined, 'setActiveModuleId'),
 
       toggleLeftSidebar: () =>
         set(

@@ -41,17 +41,17 @@ pnpm run tauri:dev
 
 ### 配置检查清单
 
-| 文件                            | 需要更新的字段                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `package.json`                  | `name`, `description`                                                          |
-| `index.html`                    | `<title>` 标签                                                                 |
-| `src-tauri/tauri.conf.json`     | `productName`, `identifier`, `windows[0].title`, 捆绑信息, 更新程序端点        |
-| `src-tauri/Cargo.toml`          | `name`, `description`, `authors`                                               |
-| `.github/workflows/release.yml` | 工作流名称, 发布名称                                                           |
-| `AGENTS.md`                     | 包含应用名称/描述的概述部分                                                    |
-| `README.md`                     | 将模板引用替换为您的应用                                                       |
-| `docs/SECURITY.md`              | 设置安全联系人                                                                 |
-| `docs/CONTRIBUTING.md`          | 设置 GitHub 仓库路径                                                           |
+| 文件                            | 需要更新的字段                                                          |
+| ------------------------------- | ----------------------------------------------------------------------- |
+| `package.json`                  | `name`, `description`                                                   |
+| `index.html`                    | `<title>` 标签                                                          |
+| `src-tauri/tauri.conf.json`     | `productName`, `identifier`, `windows[0].title`, 捆绑信息, 更新程序端点 |
+| `src-tauri/Cargo.toml`          | `name`, `description`, `authors`                                        |
+| `.github/workflows/release.yml` | 工作流名称, 发布名称                                                    |
+| `AGENTS.md`                     | 包含应用名称/描述的概述部分                                             |
+| `README.md`                     | 将模板引用替换为您的应用                                                |
+| `docs/SECURITY.md`              | 设置安全联系人                                                          |
+| `docs/CONTRIBUTING.md`          | 设置 GitHub 仓库路径                                                    |
 
 ### 标识符格式
 
