@@ -8,6 +8,8 @@
   "menu.hideOthers": "Hide Others",
   "menu.showAll": "Show All",
   "menu.quit": "Quit {{appName}}",
+  "menu.file": "File",
+  "menu.save": "Save",
   "menu.edit": "Edit",
   "menu.view": "View",
   "menu.toggleLeftSidebar": "Toggle Left Sidebar",

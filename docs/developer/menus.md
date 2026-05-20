@@ -26,6 +26,9 @@ App Name
 ├── ────────────────────
 └── Quit App Name            (Cmd+Q)
 
+File
+└── Save                     (Cmd+S)
+
 Edit
 ├── Undo
 ├── Redo
@@ -209,10 +212,10 @@ The `CmdOrCtrl` accelerator automatically uses the correct modifier per platform
 
 ## Troubleshooting
 
-| Issue                                              | Solution                                                                          |
-| -------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Menu not appearing                                 | Ensure `buildAppMenu()` is called during app initialization                       |
-| Translations not updating                          | Verify `setupMenuLanguageListener()` is called                                    |
-| Action not working                                 | Check handler uses `getState()` for current values                                |
-| Accelerator conflicts                              | Verify shortcut isn't used elsewhere in the app                                   |
+| Issue                                              | Solution                                                                                                    |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Menu not appearing                                 | Ensure `buildAppMenu()` is called during app initialization                                                 |
+| Translations not updating                          | Verify `setupMenuLanguageListener()` is called                                                              |
+| Action not working                                 | Check handler uses `getState()` for current values                                                          |
+| Accelerator conflicts                              | Verify shortcut isn't used elsewhere in the app                                                             |
 | Text fields cannot paste, cut, copy, or select all | See [UI Pitfalls — Native menu and WebView text editing](./ui-pitfalls/native-menu-webview-text-editing.md) |

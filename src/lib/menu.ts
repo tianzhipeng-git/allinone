@@ -15,6 +15,7 @@ import i18n from '@/i18n/config'
 import { useUIStore } from '@/store/ui-store'
 import { logger } from '@/lib/logger'
 import { notifications } from '@/lib/notifications'
+import { dispatchModuleSaveRequested } from '@/lib/module-save-events'
 
 const APP_NAME = 'Tauri Template'
 
@@ -68,6 +69,18 @@ export async function buildAppMenu(): Promise<Menu> {
       ],
     })
 
+    const fileSubmenu = await Submenu.new({
+      text: t('menu.file'),
+      items: [
+        await MenuItem.new({
+          id: 'save',
+          text: t('menu.save'),
+          accelerator: 'CmdOrCtrl+S',
+          action: handleSaveActiveModule,
+        }),
+      ],
+    })
+
     const editSubmenu = await Submenu.new({
       text: t('menu.edit'),
       items: [
@@ -103,7 +116,7 @@ export async function buildAppMenu(): Promise<Menu> {
 
     // Build the complete menu
     const menu = await Menu.new({
-      items: [appSubmenu, editSubmenu, viewSubmenu],
+      items: [appSubmenu, fileSubmenu, editSubmenu, viewSubmenu],
     })
 
     // Set as the application menu
@@ -164,6 +177,12 @@ async function handleCheckForUpdates(): Promise<void> {
 function handleOpenPreferences(): void {
   logger.info('Preferences menu item clicked')
   useUIStore.getState().setPreferencesOpen(true)
+}
+
+function handleSaveActiveModule(): void {
+  const { activeModuleId } = useUIStore.getState()
+  logger.info('Save menu item clicked', { activeModuleId })
+  dispatchModuleSaveRequested(activeModuleId)
 }
 
 function handleToggleLeftSidebar(): void {

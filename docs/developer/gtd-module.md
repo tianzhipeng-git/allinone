@@ -76,9 +76,11 @@ The Markdown editor uses Milkdown Crepe:
 - Import the theme once in `src/App.css`
 - Keep Crepe wrapped in a small component so lifecycle and `destroy()` stay contained
 - Use `markdownUpdated` to sync drafts back to React state
+- Keep GTD-specific ProseMirror plugins under `components/gtdMarkdownPlugins.ts`
+- Keep Crepe `BlockEdit` enabled for the slash menu, but hide the floating block handle controls in GTD because they overlap folding controls and Tauri WebView drag handling is brittle there
+- Limit headings to levels 1-4 and use the GTD plugin to normalize deeper headings
+- Support folding for headings, whole code blocks, and whole blockquotes through decorations
 - Avoid storing persistent Markdown content in Zustand; save through `gtdSaveDocument`
-
-The next editor task can add custom ProseMirror plugins for heading, code block, and blockquote folding without changing the module boundary.
 
 ## Adding GTD Features
 

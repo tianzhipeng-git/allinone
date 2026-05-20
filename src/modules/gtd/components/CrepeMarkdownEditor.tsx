@@ -1,6 +1,11 @@
 import { Crepe } from '@milkdown/crepe'
 import { useEffect, useRef } from 'react'
 
+import {
+  gtdMarkdownEditingPlugin,
+  normalizeMarkdownHeadingDepth,
+} from './gtdMarkdownPlugins'
+
 interface CrepeMarkdownEditorProps {
   value: string
   placeholder: string
@@ -26,7 +31,7 @@ export function CrepeMarkdownEditor({
 
     const crepe = new Crepe({
       root: rootRef.current,
-      defaultValue: value,
+      defaultValue: normalizeMarkdownHeadingDepth(value),
       features: {
         [Crepe.Feature.Placeholder]: true,
       },
@@ -36,6 +41,8 @@ export function CrepeMarkdownEditor({
         },
       },
     })
+
+    crepe.editor.use(gtdMarkdownEditingPlugin)
 
     crepe.on(listener => {
       listener.markdownUpdated((_, markdown) => {

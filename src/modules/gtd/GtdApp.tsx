@@ -1,5 +1,5 @@
 import { FileText, Save } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -13,6 +13,10 @@ import {
 } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { GtdDocument } from '@/lib/tauri-bindings'
+import {
+  MODULE_SAVE_REQUESTED_EVENT,
+  type ModuleSaveRequestedDetail,
+} from '@/lib/module-save-events'
 import { useGtdStore } from './store'
 import { useGtdDocument, useGtdTree, useSaveGtdDocument } from './services'
 import { CrepeMarkdownEditor } from './components/CrepeMarkdownEditor'
@@ -31,6 +35,7 @@ function GtdEditorSurface({
   const { t } = useTranslation()
   const [draft, setDraft] = useState(initialContent)
   const [isDirty, setIsDirty] = useState(false)
+  const saveRef = useRef<() => Promise<void>>(() => Promise.resolve())
   const saveMutation = useSaveGtdDocument(document)
 
   const handleChange = (markdown: string) => {
@@ -39,6 +44,10 @@ function GtdEditorSurface({
   }
 
   const handleSave = async () => {
+    if (!isDirty || saveMutation.isPending) {
+      return
+    }
+
     const result = await saveMutation.mutateAsync(draft)
     if (result.status === 'error') {
       toast.error(t('modules.gtd.toast.saveFailed'), {
@@ -50,6 +59,25 @@ function GtdEditorSurface({
     setIsDirty(false)
     toast.success(t('modules.gtd.toast.saved'))
   }
+
+  useEffect(() => {
+    saveRef.current = handleSave
+  })
+
+  useEffect(() => {
+    const handleSaveRequest = (event: Event) => {
+      const detail = (event as CustomEvent<ModuleSaveRequestedDetail>).detail
+      if (detail?.moduleId !== 'gtd') {
+        return
+      }
+
+      void saveRef.current()
+    }
+
+    window.addEventListener(MODULE_SAVE_REQUESTED_EVENT, handleSaveRequest)
+    return () =>
+      window.removeEventListener(MODULE_SAVE_REQUESTED_EVENT, handleSaveRequest)
+  }, [])
 
   return (
     <div className="flex h-full min-h-0 flex-col">

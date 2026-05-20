@@ -8,6 +8,8 @@
   "menu.hideOthers": "隐藏其他",
   "menu.showAll": "全部显示",
   "menu.quit": "退出 {{appName}}",
+  "menu.file": "文件",
+  "menu.save": "保存",
   "menu.edit": "编辑",
   "menu.view": "视图",
   "menu.toggleLeftSidebar": "切换左侧边栏",
