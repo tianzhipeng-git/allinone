@@ -26,6 +26,16 @@ App Name
 ├── ────────────────────
 └── Quit App Name            (Cmd+Q)
 
+Edit
+├── Undo
+├── Redo
+├── ────────────────────
+├── Cut
+├── Copy
+├── Paste
+├── ────────────────────
+└── Select All
+
 View
 ├── Toggle Left Sidebar      (Cmd+1)
 └── Toggle Right Sidebar     (Cmd+2)
@@ -63,8 +73,22 @@ export async function buildAppMenu(): Promise<Menu> {
     ],
   })
 
+  const editSubmenu = await Submenu.new({
+    text: t('menu.edit'),
+    items: [
+      await PredefinedMenuItem.new({ item: 'Undo' }),
+      await PredefinedMenuItem.new({ item: 'Redo' }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await PredefinedMenuItem.new({ item: 'Cut' }),
+      await PredefinedMenuItem.new({ item: 'Copy' }),
+      await PredefinedMenuItem.new({ item: 'Paste' }),
+      await PredefinedMenuItem.new({ item: 'Separator' }),
+      await PredefinedMenuItem.new({ item: 'SelectAll' }),
+    ],
+  })
+
   const menu = await Menu.new({
-    items: [appSubmenu, viewSubmenu],
+    items: [appSubmenu, editSubmenu, viewSubmenu],
   })
 
   await menu.setAsAppMenu()
@@ -112,6 +136,10 @@ await PredefinedMenuItem.new({ item: 'Quit', text: t('menu.quit') })
 await PredefinedMenuItem.new({ item: 'Copy' })
 await PredefinedMenuItem.new({ item: 'Paste' })
 ```
+
+### Required Edit Menu
+
+Background and troubleshooting: [UI Pitfalls — Native menu and WebView text editing](./ui-pitfalls/native-menu-webview-text-editing.md).
 
 ### Submenus
 
@@ -181,9 +209,10 @@ The `CmdOrCtrl` accelerator automatically uses the correct modifier per platform
 
 ## Troubleshooting
 
-| Issue                     | Solution                                                    |
-| ------------------------- | ----------------------------------------------------------- |
-| Menu not appearing        | Ensure `buildAppMenu()` is called during app initialization |
-| Translations not updating | Verify `setupMenuLanguageListener()` is called              |
-| Action not working        | Check handler uses `getState()` for current values          |
-| Accelerator conflicts     | Verify shortcut isn't used elsewhere in the app             |
+| Issue                                              | Solution                                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Menu not appearing                                 | Ensure `buildAppMenu()` is called during app initialization                       |
+| Translations not updating                          | Verify `setupMenuLanguageListener()` is called                                    |
+| Action not working                                 | Check handler uses `getState()` for current values                                |
+| Accelerator conflicts                              | Verify shortcut isn't used elsewhere in the app                                   |
+| Text fields cannot paste, cut, copy, or select all | See [UI Pitfalls — Native menu and WebView text editing](./ui-pitfalls/native-menu-webview-text-editing.md) |

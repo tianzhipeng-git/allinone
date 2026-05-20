@@ -8,7 +8,7 @@ Technical documentation for building and extending this app. These docs describe
 | ----------------------------------------------- | ------------------------------------------------------- |
 | [Architecture Guide](./architecture-guide.md)   | High-level overview, mental models, system architecture |
 | [Module Architecture](./module-architecture.md) | Built-in app module boundaries and registration         |
-| [GTD Module](./gtd-module.md)                   | Global Todo module implementation and extension notes   |
+| [GTD Module](./gtd-module.md)                   | Global Todo module |
 | [Rust Architecture](./rust-architecture.md)     | Rust module organization and patterns                   |
 | [State Management](./state-management.md)       | Three-layer state onion, Zustand, TanStack Query        |
 | [Error Handling](./error-handling.md)           | Error propagation, user feedback, retry patterns        |
@@ -29,6 +29,7 @@ Technical documentation for building and extending this app. These docs describe
 | Document                                   | Description                                 |
 | ------------------------------------------ | ------------------------------------------- |
 | [UI Patterns](./ui-patterns.md)            | CSS architecture, shadcn/ui components      |
+| [UI Pitfalls](./ui-pitfalls.md)            | WebView / menu / layout regressions (indexed) |
 | [Internationalization](./i18n-patterns.md) | Translation system, locale-ready UI         |
 | [Notifications](./notifications.md)        | Toast and native notifications              |
 | [Cross-Platform](./cross-platform.md)      | Platform detection, OS-specific adaptations |

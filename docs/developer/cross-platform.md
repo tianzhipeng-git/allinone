@@ -334,6 +334,10 @@ For opacity transitions on Windows title bars, use `transform-gpu` to fix WebKit
 <div className="transform-gpu transition-opacity" />
 ```
 
+### HTML5 drag-and-drop inside the WebView
+
+Tauri’s WKWebKit webview often does **not** implement a reliable **HTML5 Drag and Drop** pipeline for in-app UI (`react-dnd-html5-backend`). For tree/list reordering, prefer a **mouse-aware** backend such as `react-dnd-touch-backend` with `enableMouseEvents`, or another non–HTML5 backend. Concrete wiring and guardrails: [UI Pitfalls — GTD sidebar tree](./ui-pitfalls/gtd-sidebar-tree-arborist.md).
+
 ## Best Practices
 
 1. **Test with `forcePlatform`** - Verify layouts for all platforms during development

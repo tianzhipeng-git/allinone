@@ -1,104 +1,54 @@
 import { open } from '@tauri-apps/plugin-dialog'
-import { FileText, Folder, FolderPlus, Plus } from 'lucide-react'
+import { ClipboardPaste, FolderPlus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
-import type { GtdDocument } from '@/lib/tauri-bindings'
-import { buildGtdGroupTree } from './tree'
-import type { GtdGroupNode } from './types'
-import { useGtdStore } from './store'
+import { logger } from '@/lib/logger'
 import {
   useCreateGtdGroup,
+  useDeleteGtdDocument,
+  useDeleteGtdGroup,
   useGtdTree,
+  useMoveGtdDocument,
+  useMoveGtdGroup,
+  usePreviewGtdImportPath,
   useRegisterGtdDocument,
+  useRenameGtdDocument,
+  useRenameGtdGroup,
 } from './services'
-
-function getFirstGroupId(nodes: GtdGroupNode[]): number | null {
-  const first = nodes[0]
-  if (!first) {
-    return null
-  }
-
-  return first.id
-}
-
-function GroupNode({ node, depth }: { node: GtdGroupNode; depth: number }) {
-  const selectedDocumentId = useGtdStore(state => state.selectedDocumentId)
-  const selectedGroupId = useGtdStore(state => state.selectedGroupId)
-  const setSelectedDocumentId = useGtdStore(
-    state => state.setSelectedDocumentId
-  )
-  const setSelectedGroupId = useGtdStore(state => state.setSelectedGroupId)
-
-  const selectGroup = () => {
-    setSelectedGroupId(node.id)
-  }
-
-  const selectDocument = (document: GtdDocument) => {
-    setSelectedGroupId(document.group_id)
-    setSelectedDocumentId(document.id)
-  }
-
-  return (
-    <div>
-      <button
-        type="button"
-        className={cn(
-          'flex h-8 w-full items-center gap-2 rounded-md px-2 text-start text-xs font-medium',
-          selectedGroupId === node.id
-            ? 'bg-accent text-accent-foreground'
-            : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
-        )}
-        style={{ paddingInlineStart: `${8 + depth * 14}px` }}
-        onClick={selectGroup}
-      >
-        <Folder className="size-3.5" aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate">{node.name}</span>
-      </button>
-
-      {node.documents.map(document => (
-        <button
-          key={document.id}
-          type="button"
-          className={cn(
-            'flex h-8 w-full items-center gap-2 rounded-md px-2 text-start text-xs',
-            selectedDocumentId === document.id
-              ? 'bg-primary text-primary-foreground'
-              : 'text-foreground hover:bg-accent/60'
-          )}
-          style={{ paddingInlineStart: `${22 + depth * 14}px` }}
-          onClick={() => selectDocument(document)}
-        >
-          <FileText className="size-3.5" aria-hidden="true" />
-          <span className="min-w-0 flex-1 truncate">{document.title}</span>
-        </button>
-      ))}
-
-      {node.children.map(child => (
-        <GroupNode key={child.id} node={child} depth={depth + 1} />
-      ))}
-    </div>
-  )
-}
+import { useGtdStore } from './store'
+import { buildGtdGroupTree } from './tree'
+import { GtdRightSidebarDialogs } from './components/GtdRightSidebarDialogs'
+import { GtdTree } from './components/GtdSidebarTree'
+import {
+  DOCUMENT_PREFIX,
+  GROUP_PREFIX,
+  TREE_ROOT_ID,
+  buildArboristTreeData,
+  findGroupName,
+  getFirstGroupId,
+  getHiddenRoot,
+  getVisibleNodes,
+  parseTreeItemId,
+  type DeleteTarget,
+  type RenameTarget,
+} from './components/GtdSidebarTreeModel'
 
 export function GtdRightSidebar() {
   const { t } = useTranslation()
   const treeQuery = useGtdTree()
   const createGroup = useCreateGtdGroup()
   const registerDocument = useRegisterGtdDocument()
+  const renameGroup = useRenameGtdGroup()
+  const renameDocument = useRenameGtdDocument()
+  const moveGroup = useMoveGtdGroup()
+  const moveDocument = useMoveGtdDocument()
+  const deleteGroup = useDeleteGtdGroup()
+  const deleteDocument = useDeleteGtdDocument()
+  const previewImportPath = usePreviewGtdImportPath()
+  const selectedDocumentId = useGtdStore(state => state.selectedDocumentId)
   const selectedGroupId = useGtdStore(state => state.selectedGroupId)
   const setSelectedGroupId = useGtdStore(state => state.setSelectedGroupId)
   const setSelectedDocumentId = useGtdStore(
@@ -106,10 +56,30 @@ export function GtdRightSidebar() {
   )
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
   const [groupName, setGroupName] = useState('')
+  const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
+  const [pathDialogOpen, setPathDialogOpen] = useState(false)
+  const [pathValue, setPathValue] = useState('')
+  const [previewFiles, setPreviewFiles] = useState<string[] | null>(null)
+  const [selectedImportPaths, setSelectedImportPaths] = useState<Set<string>>(
+    () => new Set()
+  )
   const tree = buildGtdGroupTree(
     treeQuery.data?.groups ?? [],
     treeQuery.data?.documents ?? []
   )
+  const { nodes: visibleNodes, rootDocuments } = getVisibleNodes(tree)
+  const selectedGroupName =
+    findGroupName(tree, selectedGroupId) ??
+    t('modules.gtd.sidebar.topLevelGroup')
+  const selectedItemId =
+    selectedDocumentId !== null
+      ? `${DOCUMENT_PREFIX}${selectedDocumentId}`
+      : selectedGroupId !== null
+        ? `${GROUP_PREFIX}${selectedGroupId}`
+        : undefined
+  const treeData = buildArboristTreeData(visibleNodes, rootDocuments)
 
   useEffect(() => {
     if (selectedGroupId !== null) {
@@ -120,9 +90,10 @@ export function GtdRightSidebar() {
   }, [selectedGroupId, setSelectedGroupId, tree])
 
   const handleCreateGroup = async () => {
+    const parentId = selectedGroupId ?? getFirstGroupId(tree)
     const result = await createGroup.mutateAsync({
       name: groupName,
-      parentId: selectedGroupId,
+      parentId,
     })
 
     if (result.status === 'error') {
@@ -134,16 +105,44 @@ export function GtdRightSidebar() {
 
     setGroupName('')
     setGroupDialogOpen(false)
+    setSelectedDocumentId(null)
     setSelectedGroupId(result.data.id)
   }
 
-  const handleRegisterDocument = async () => {
+  const registerFiles = async (paths: string[]) => {
     const groupId = selectedGroupId ?? getFirstGroupId(tree)
     if (groupId === null) {
       toast.error(t('modules.gtd.toast.noGroup'))
       return
     }
 
+    let lastDocumentId: number | null = null
+    for (const path of paths) {
+      const result = await registerDocument.mutateAsync({
+        path,
+        groupId,
+        title: null,
+      })
+
+      if (result.status === 'error') {
+        toast.error(t('modules.gtd.toast.registerFailed'), {
+          description: result.error,
+        })
+        return
+      }
+
+      lastDocumentId = result.data.id
+    }
+
+    if (lastDocumentId !== null) {
+      setSelectedDocumentId(lastDocumentId)
+    }
+    toast.success(
+      t('modules.gtd.toast.registeredCount', { count: paths.length })
+    )
+  }
+
+  const handleRegisterDocument = async () => {
     const selected = await open({
       multiple: false,
       directory: false,
@@ -154,21 +153,203 @@ export function GtdRightSidebar() {
       return
     }
 
-    const result = await registerDocument.mutateAsync({
-      path: selected,
-      groupId,
-      title: null,
-    })
+    await registerFiles([selected])
+  }
 
+  const handlePreviewPath = async () => {
+    const result = await previewImportPath.mutateAsync(pathValue)
     if (result.status === 'error') {
-      toast.error(t('modules.gtd.toast.registerFailed'), {
+      toast.error(t('modules.gtd.toast.importPreviewFailed'), {
         description: result.error,
       })
       return
     }
 
-    setSelectedDocumentId(result.data.id)
-    toast.success(t('modules.gtd.toast.registered'))
+    if (result.data.files.length === 0) {
+      toast.error(t('modules.gtd.toast.noMarkdownFiles'))
+      return
+    }
+
+    setPreviewFiles(result.data.files)
+    setSelectedImportPaths(new Set(result.data.files))
+  }
+
+  const handleConfirmImport = async () => {
+    if (!previewFiles) {
+      return
+    }
+
+    const paths = previewFiles.filter(path => selectedImportPaths.has(path))
+    if (paths.length === 0) {
+      toast.error(t('modules.gtd.toast.noImportSelection'))
+      return
+    }
+
+    await registerFiles(paths)
+    setPathDialogOpen(false)
+    setPathValue('')
+    setPreviewFiles(null)
+    setSelectedImportPaths(new Set())
+  }
+
+  const handleToggleImportPath = (path: string, checked: boolean) => {
+    setSelectedImportPaths(current => {
+      const next = new Set(current)
+      if (checked) {
+        next.add(path)
+      } else {
+        next.delete(path)
+      }
+      return next
+    })
+  }
+
+  const handleSetAllImportPaths = (checked: boolean) => {
+    setSelectedImportPaths(new Set(checked && previewFiles ? previewFiles : []))
+  }
+
+  const handleRename = async () => {
+    if (!renameTarget) {
+      return
+    }
+
+    const result =
+      renameTarget.type === 'group'
+        ? await renameGroup.mutateAsync({
+            groupId: renameTarget.id,
+            name: renameValue,
+          })
+        : await renameDocument.mutateAsync({
+            documentId: renameTarget.id,
+            title: renameValue,
+          })
+
+    if (result.status === 'error') {
+      toast.error(t('modules.gtd.toast.renameFailed'), {
+        description: result.error,
+      })
+      return
+    }
+
+    setRenameTarget(null)
+    setRenameValue('')
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return
+    }
+
+    if (deleteTarget.type === 'group' && deleteTarget.childCount > 0) {
+      toast.error(t('modules.gtd.toast.deleteGroupNotEmpty'))
+      return
+    }
+
+    const result =
+      deleteTarget.type === 'group'
+        ? await deleteGroup.mutateAsync(deleteTarget.id)
+        : await deleteDocument.mutateAsync(deleteTarget.id)
+
+    if (result.status === 'error') {
+      toast.error(t('modules.gtd.toast.deleteFailed'), {
+        description: result.error,
+      })
+      return
+    }
+
+    if (
+      deleteTarget.type === 'document' &&
+      selectedDocumentId === deleteTarget.id
+    ) {
+      setSelectedDocumentId(null)
+    }
+
+    if (deleteTarget.type === 'group' && selectedGroupId === deleteTarget.id) {
+      setSelectedGroupId(getFirstGroupId(tree))
+      setSelectedDocumentId(null)
+    }
+
+    setDeleteTarget(null)
+  }
+
+  const handleMoveTreeItem = async (
+    sourceItemId: string,
+    targetParentItemId: string
+  ) => {
+    const source = parseTreeItemId(sourceItemId)
+    const hiddenRoot = getHiddenRoot(tree)
+    const target =
+      targetParentItemId === TREE_ROOT_ID && hiddenRoot
+        ? { type: 'group' as const, id: hiddenRoot.id }
+        : parseTreeItemId(targetParentItemId)
+
+    logger.debug('gtd tree drop requested', {
+      sourceItemId,
+      targetParentItemId,
+      source,
+      target,
+    })
+
+    if (!source || !target || target.type !== 'group') {
+      logger.warn('gtd tree drop ignored', {
+        reason: 'invalid source or target',
+        sourceItemId,
+        targetParentItemId,
+      })
+      return
+    }
+
+    const result =
+      source.type === 'group'
+        ? await moveGroup.mutateAsync({
+            groupId: source.id,
+            parentId: target.id,
+          })
+        : await moveDocument.mutateAsync({
+            documentId: source.id,
+            groupId: target.id,
+          })
+
+    if (result.status === 'error') {
+      logger.warn('gtd tree drop failed', {
+        source,
+        target,
+        error: result.error,
+      })
+      toast.error(t('modules.gtd.toast.moveFailed'), {
+        description: result.error,
+      })
+      return
+    }
+
+    logger.debug('gtd tree drop completed', { source, target })
+
+    if (source.type === 'document') {
+      setSelectedGroupId(target.id)
+      setSelectedDocumentId(source.id)
+    } else {
+      setSelectedGroupId(source.id)
+      setSelectedDocumentId(null)
+    }
+  }
+
+  const handleSelectTreeItem = (itemId: string) => {
+    const parsed = parseTreeItemId(itemId)
+    if (!parsed) {
+      return
+    }
+
+    if (parsed.type === 'group') {
+      setSelectedGroupId(parsed.id)
+      setSelectedDocumentId(null)
+      return
+    }
+
+    const document = treeQuery.data?.documents.find(
+      candidate => candidate.id === parsed.id
+    )
+    setSelectedGroupId(document?.group_id ?? selectedGroupId)
+    setSelectedDocumentId(parsed.id)
   }
 
   return (
@@ -187,10 +368,21 @@ export function GtdRightSidebar() {
             type="button"
             variant="ghost"
             size="icon-sm"
-            title={t('modules.gtd.actions.newGroup')}
+            title={t('modules.gtd.actions.newGroupUnder', {
+              group: selectedGroupName,
+            })}
             onClick={() => setGroupDialogOpen(true)}
           >
             <FolderPlus className="size-4" aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            title={t('modules.gtd.actions.pastePath')}
+            onClick={() => setPathDialogOpen(true)}
+          >
+            <ClipboardPaste className="size-4" aria-hidden="true" />
           </Button>
           <Button
             type="button"
@@ -204,51 +396,58 @@ export function GtdRightSidebar() {
           </Button>
         </header>
 
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="space-y-1 p-2">
-            {tree.map(node => (
-              <GroupNode key={node.id} node={node} depth={0} />
-            ))}
-          </div>
-        </ScrollArea>
+        <div className="min-h-0 flex-1">
+          <GtdTree
+            data={treeData}
+            selectedItemId={selectedItemId}
+            dragHandleHint={t('modules.gtd.sidebar.dragHandleHint')}
+            renameLabel={t('modules.gtd.actions.rename')}
+            onRename={target => {
+              setRenameTarget(target)
+              setRenameValue(target.name)
+            }}
+            deleteLabel={t('modules.gtd.actions.delete')}
+            onDelete={setDeleteTarget}
+            onSelect={handleSelectTreeItem}
+            onMove={handleMoveTreeItem}
+          />
+        </div>
       </div>
 
-      <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('modules.gtd.dialog.groupTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('modules.gtd.dialog.groupDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            value={groupName}
-            placeholder={t('modules.gtd.dialog.groupPlaceholder')}
-            onChange={event => setGroupName(event.target.value)}
-            onKeyDown={event => {
-              if (event.key === 'Enter' && groupName.trim()) {
-                void handleCreateGroup()
-              }
-            }}
-          />
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setGroupDialogOpen(false)}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateGroup}
-              disabled={!groupName.trim() || createGroup.isPending}
-            >
-              {t('modules.gtd.actions.create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GtdRightSidebarDialogs
+        groupDialogOpen={groupDialogOpen}
+        setGroupDialogOpen={setGroupDialogOpen}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        selectedGroupName={selectedGroupName}
+        onCreateGroup={() => void handleCreateGroup()}
+        createGroupPending={createGroup.isPending}
+        renameTarget={renameTarget}
+        setRenameTarget={setRenameTarget}
+        renameValue={renameValue}
+        setRenameValue={setRenameValue}
+        onRename={() => void handleRename()}
+        renamePending={renameGroup.isPending || renameDocument.isPending}
+        pathDialogOpen={pathDialogOpen}
+        setPathDialogOpen={setPathDialogOpen}
+        pathValue={pathValue}
+        setPathValue={setPathValue}
+        previewFiles={previewFiles}
+        setPreviewFiles={setPreviewFiles}
+        selectedImportPaths={selectedImportPaths}
+        setSelectedImportPaths={setSelectedImportPaths}
+        onPreviewPath={() => void handlePreviewPath()}
+        onConfirmImport={() => void handleConfirmImport()}
+        onToggleImportPath={handleToggleImportPath}
+        onSetAllImportPaths={handleSetAllImportPaths}
+        previewImportPathPending={previewImportPath.isPending}
+        registerDocumentPending={registerDocument.isPending}
+        deleteTarget={deleteTarget}
+        setDeleteTarget={setDeleteTarget}
+        onDelete={() => void handleDelete()}
+        deleteGroupPending={deleteGroup.isPending}
+        deleteDocumentPending={deleteDocument.isPending}
+      />
     </>
   )
 }

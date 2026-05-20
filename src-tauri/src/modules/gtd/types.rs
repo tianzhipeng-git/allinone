@@ -25,3 +25,10 @@ pub struct GtdTree {
     pub groups: Vec<GtdGroup>,
     pub documents: Vec<GtdDocument>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct GtdImportPreview {
+    pub path: String,
+    pub is_directory: bool,
+    pub files: Vec<String>,
+}

@@ -50,6 +50,18 @@ vi.mock('@/lib/tauri-bindings', () => ({
       status: 'ok',
       data: { id: 1, parent_id: null, name: 'Inbox', sort_order: 0 },
     }),
+    gtdRenameGroup: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: { id: 1, parent_id: null, name: 'Renamed', sort_order: 0 },
+    }),
+    gtdMoveGroup: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: { id: 1, parent_id: null, name: 'Inbox', sort_order: 0 },
+    }),
+    gtdDeleteGroup: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: null,
+    }),
     gtdRegisterDocument: vi.fn().mockResolvedValue({
       status: 'ok',
       data: {
@@ -60,6 +72,42 @@ vi.mock('@/lib/tauri-bindings', () => ({
         markdown_heading: 'todo',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
+      },
+    }),
+    gtdRenameDocument: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: {
+        id: 1,
+        group_id: 1,
+        title: 'renamed',
+        path: '/tmp/todo.md',
+        markdown_heading: 'todo',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      },
+    }),
+    gtdMoveDocument: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: {
+        id: 1,
+        group_id: 1,
+        title: 'todo',
+        path: '/tmp/todo.md',
+        markdown_heading: 'todo',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      },
+    }),
+    gtdDeleteDocument: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: null,
+    }),
+    gtdPreviewImportPath: vi.fn().mockResolvedValue({
+      status: 'ok',
+      data: {
+        path: '/tmp',
+        is_directory: false,
+        files: ['/tmp/todo.md'],
       },
     }),
     gtdReadDocument: vi.fn().mockResolvedValue({ status: 'ok', data: '' }),

@@ -35,6 +35,47 @@ export function useCreateGtdGroup() {
   })
 }
 
+export function useRenameGtdGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { groupId: number; name: string }) =>
+      commands.gtdRenameGroup(input.groupId, input.name),
+    onSuccess: result => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+      }
+    },
+  })
+}
+
+export function useMoveGtdGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { groupId: number; parentId: number | null }) =>
+      commands.gtdMoveGroup(input.groupId, input.parentId),
+    onSuccess: result => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+      }
+    },
+  })
+}
+
+export function useDeleteGtdGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (groupId: number) => commands.gtdDeleteGroup(groupId),
+    onSuccess: result => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+      }
+    },
+  })
+}
+
 export function useRegisterGtdDocument() {
   const queryClient = useQueryClient()
 
@@ -49,6 +90,56 @@ export function useRegisterGtdDocument() {
         queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
       }
     },
+  })
+}
+
+export function useRenameGtdDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { documentId: number; title: string }) =>
+      commands.gtdRenameDocument(input.documentId, input.title),
+    onSuccess: result => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+      }
+    },
+  })
+}
+
+export function useMoveGtdDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: { documentId: number; groupId: number }) =>
+      commands.gtdMoveDocument(input.documentId, input.groupId),
+    onSuccess: result => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+      }
+    },
+  })
+}
+
+export function useDeleteGtdDocument() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (documentId: number) => commands.gtdDeleteDocument(documentId),
+    onSuccess: (result, documentId) => {
+      if (result.status === 'ok') {
+        queryClient.invalidateQueries({ queryKey: gtdQueryKeys.tree })
+        queryClient.removeQueries({
+          queryKey: gtdQueryKeys.document(documentId),
+        })
+      }
+    },
+  })
+}
+
+export function usePreviewGtdImportPath() {
+  return useMutation({
+    mutationFn: (path: string) => commands.gtdPreviewImportPath(path),
   })
 }
 

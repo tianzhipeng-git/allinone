@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::{params, Connection, OptionalExtension};
 use tauri::{AppHandle, Manager};
 
-use super::types::{GtdDocument, GtdGroup, GtdTree};
+use super::types::{GtdDocument, GtdGroup, GtdImportPreview, GtdTree};
 
 const DEFAULT_GROUP_NAME: &str = "Inbox";
 
@@ -133,6 +133,85 @@ pub fn create_group(
     get_group(conn, group_id)
 }
 
+pub fn rename_group(conn: &Connection, group_id: i32, name: &str) -> Result<GtdGroup, String> {
+    ensure_group_exists(conn, group_id)?;
+    let trimmed = name.trim();
+    validate_group_name(trimmed)?;
+
+    conn.execute(
+        "
+        UPDATE gtd_groups
+        SET name = ?1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?2
+        ",
+        params![trimmed, group_id],
+    )
+    .map_err(|e| format!("Failed to rename GTD group: {e}"))?;
+
+    get_group(conn, group_id)
+}
+
+pub fn move_group(
+    conn: &Connection,
+    group_id: i32,
+    parent_id: Option<i32>,
+) -> Result<GtdGroup, String> {
+    ensure_group_exists(conn, group_id)?;
+
+    if parent_id == Some(group_id) {
+        return Err("A group cannot be moved into itself".to_string());
+    }
+
+    if let Some(id) = parent_id {
+        ensure_group_exists(conn, id)?;
+        ensure_not_descendant(conn, group_id, id)?;
+    }
+
+    let sort_order = next_group_sort_order(conn, parent_id)?;
+    conn.execute(
+        "
+        UPDATE gtd_groups
+        SET parent_id = ?1, sort_order = ?2, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?3
+        ",
+        params![parent_id, sort_order, group_id],
+    )
+    .map_err(|e| format!("Failed to move GTD group: {e}"))?;
+
+    get_group(conn, group_id)
+}
+
+pub fn delete_group(conn: &Connection, group_id: i32) -> Result<(), String> {
+    ensure_group_exists(conn, group_id)?;
+
+    let child_group_count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM gtd_groups WHERE parent_id = ?1",
+            [group_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to inspect GTD child groups: {e}"))?;
+    if child_group_count > 0 {
+        return Err("Group must be empty before it can be deleted".to_string());
+    }
+
+    let document_count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM gtd_documents WHERE group_id = ?1",
+            [group_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to inspect GTD group documents: {e}"))?;
+    if document_count > 0 {
+        return Err("Group must be empty before it can be deleted".to_string());
+    }
+
+    conn.execute("DELETE FROM gtd_groups WHERE id = ?1", [group_id])
+        .map_err(|e| format!("Failed to delete GTD group: {e}"))?;
+
+    ensure_default_group(conn)
+}
+
 pub fn register_document(
     conn: &Connection,
     path: &str,
@@ -142,6 +221,10 @@ pub fn register_document(
     ensure_group_exists(conn, group_id)?;
 
     let path_buf = validate_markdown_path(path)?;
+    let explicit_title = title
+        .as_ref()
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
     let content = std::fs::read_to_string(&path_buf)
         .map_err(|e| format!("Failed to read Markdown file: {e}"))?;
     let heading = extract_first_heading(&content);
@@ -166,15 +249,103 @@ pub fn register_document(
         VALUES (?1, ?2, ?3, ?4)
         ON CONFLICT(path) DO UPDATE SET
             group_id = excluded.group_id,
-            title = excluded.title,
+            title = CASE WHEN ?5 THEN excluded.title ELSE gtd_documents.title END,
             markdown_heading = excluded.markdown_heading,
             updated_at = CURRENT_TIMESTAMP
         ",
-        params![group_id, title, normalized_path, heading],
+        params![group_id, title, normalized_path, heading, explicit_title],
     )
     .map_err(|e| format!("Failed to register GTD document: {e}"))?;
 
     get_document_by_path(conn, path_buf.as_path())
+}
+
+pub fn rename_document(
+    conn: &Connection,
+    document_id: i32,
+    title: &str,
+) -> Result<GtdDocument, String> {
+    let trimmed = title.trim();
+    validate_document_title(trimmed)?;
+    if trimmed.is_empty() {
+        return Err("Document title cannot be empty".to_string());
+    }
+
+    conn.execute(
+        "
+        UPDATE gtd_documents
+        SET title = ?1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?2
+        ",
+        params![trimmed, document_id],
+    )
+    .map_err(|e| format!("Failed to rename GTD document: {e}"))?;
+
+    get_document(conn, document_id)
+}
+
+pub fn move_document(
+    conn: &Connection,
+    document_id: i32,
+    group_id: i32,
+) -> Result<GtdDocument, String> {
+    ensure_group_exists(conn, group_id)?;
+    get_document(conn, document_id)?;
+
+    conn.execute(
+        "
+        UPDATE gtd_documents
+        SET group_id = ?1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?2
+        ",
+        params![group_id, document_id],
+    )
+    .map_err(|e| format!("Failed to move GTD document: {e}"))?;
+
+    get_document(conn, document_id)
+}
+
+pub fn delete_document(conn: &Connection, document_id: i32) -> Result<(), String> {
+    get_document(conn, document_id)?;
+
+    conn.execute("DELETE FROM gtd_documents WHERE id = ?1", [document_id])
+        .map_err(|e| format!("Failed to delete GTD document registration: {e}"))?;
+
+    Ok(())
+}
+
+pub fn preview_import_path(path: &str) -> Result<GtdImportPreview, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("Path cannot be empty".to_string());
+    }
+
+    let canonical = PathBuf::from(trimmed)
+        .canonicalize()
+        .map_err(|e| format!("Failed to resolve import path: {e}"))?;
+
+    if canonical.is_file() {
+        let markdown_path = validate_markdown_path(&canonical.to_string_lossy())?;
+        return Ok(GtdImportPreview {
+            path: markdown_path.to_string_lossy().to_string(),
+            is_directory: false,
+            files: vec![markdown_path.to_string_lossy().to_string()],
+        });
+    }
+
+    if !canonical.is_dir() {
+        return Err("Path must point to a file or directory".to_string());
+    }
+
+    let mut files = Vec::new();
+    collect_markdown_files(&canonical, &mut files)?;
+    files.sort_by_key(|path| path.to_lowercase());
+
+    Ok(GtdImportPreview {
+        path: canonical.to_string_lossy().to_string(),
+        is_directory: true,
+        files,
+    })
 }
 
 pub fn read_document(conn: &Connection, document_id: i32) -> Result<String, String> {
@@ -243,6 +414,32 @@ fn ensure_group_exists(conn: &Connection, id: i32) -> Result<(), String> {
     exists.ok_or_else(|| format!("GTD group not found: {id}"))
 }
 
+fn ensure_not_descendant(
+    conn: &Connection,
+    group_id: i32,
+    candidate_parent_id: i32,
+) -> Result<(), String> {
+    let mut current = Some(candidate_parent_id);
+
+    while let Some(id) = current {
+        if id == group_id {
+            return Err("A group cannot be moved into its own child".to_string());
+        }
+
+        current = conn
+            .query_row(
+                "SELECT parent_id FROM gtd_groups WHERE id = ?1",
+                [id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("Failed to inspect GTD group hierarchy: {e}"))?
+            .flatten();
+    }
+
+    Ok(())
+}
+
 fn get_document(conn: &Connection, id: i32) -> Result<GtdDocument, String> {
     conn.query_row(
         "
@@ -309,6 +506,40 @@ fn validate_markdown_path(path: &str) -> Result<PathBuf, String> {
         Some("md") | Some("markdown") => Ok(canonical),
         _ => Err("Only .md and .markdown files can be registered".to_string()),
     }
+}
+
+fn is_markdown_path(path: &Path) -> bool {
+    matches!(
+        path.extension()
+            .and_then(|value| value.to_str())
+            .map(str::to_ascii_lowercase)
+            .as_deref(),
+        Some("md") | Some("markdown")
+    )
+}
+
+fn collect_markdown_files(dir: &Path, files: &mut Vec<String>) -> Result<(), String> {
+    let entries = std::fs::read_dir(dir)
+        .map_err(|e| format!("Failed to read directory {}: {e}", dir.display()))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read directory entry: {e}"))?;
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("Failed to inspect {}: {e}", path.display()))?;
+
+        if file_type.is_dir() {
+            collect_markdown_files(&path, files)?;
+        } else if file_type.is_file() && is_markdown_path(&path) {
+            let canonical = path
+                .canonicalize()
+                .map_err(|e| format!("Failed to resolve Markdown path: {e}"))?;
+            files.push(canonical.to_string_lossy().to_string());
+        }
+    }
+
+    Ok(())
 }
 
 pub fn extract_first_heading(content: &str) -> Option<String> {

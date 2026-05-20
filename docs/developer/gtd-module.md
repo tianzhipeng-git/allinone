@@ -10,18 +10,23 @@ GTD gives the app a global view over local project Markdown todo files. The app 
 
 ```
 src/modules/gtd/
-├── index.ts                         # Module registry entry
-├── GtdApp.tsx                       # Main editor surface
-├── GtdRightSidebar.tsx              # Group and file tree
-├── services.ts                      # TanStack Query hooks over typed commands
-├── store.ts                         # Selected group/document UI state
-├── tree.ts                          # Pure tree builder
+├── index.ts                              # Module registry entry
+├── GtdApp.tsx                            # Main editor surface (no implicit document!)
+├── GtdRightSidebar.tsx                   # Group/file tree wiring + dialogs
+├── services.ts                           # TanStack Query hooks over typed commands
+├── store.ts                              # Selected group/document UI state
+├── tree.ts                               # Pure tree builder
 ├── components/
-│   └── CrepeMarkdownEditor.tsx      # Milkdown Crepe integration
+│   ├── GtdSidebarTree.tsx                # react-arborist tree UI (row/grip/DND)
+│   └── CrepeMarkdownEditor.tsx           # Milkdown Crepe integration
 └── __tests__/
 ```
 
 The left sidebar only launches modules. GTD owns the right sidebar because the folder/file tree is module-specific navigation.
+
+## Sidebar tree pitfalls (react-arborist + Tauri)
+
+See [UI Pitfalls — GTD sidebar tree](./ui-pitfalls/gtd-sidebar-tree-arborist.md).
 
 ## State Model
 
@@ -32,6 +37,7 @@ The left sidebar only launches modules. GTD owns the right sidebar because the f
 | Registered groups/documents   | TanStack Query + SQLite     |
 | Current Markdown editor draft | Local state in `GtdApp.tsx` |
 
+`selectedDocumentId` may be null while `selectedGroupId` is set (for example before any Markdown has been activated). **`GtdApp` must not substitute `documents[0]` or any other implicit document when that happens**, or the editor selection will jump unpredictably. Show the empty selection state until the user opens a Markdown file (see [UI Pitfalls — GTD sidebar tree](./ui-pitfalls/gtd-sidebar-tree-arborist.md) §5).
 Query keys must stay module-prefixed:
 
 ```typescript
@@ -55,7 +61,11 @@ Commands are registered in `src-tauri/src/bindings.rs` and exported with `pnpm r
 SQLite tables:
 
 - `gtd_groups`: nested app-level groups, independent from Markdown headings
-- `gtd_documents`: registered file metadata, including canonical path and first Markdown heading
+- `gtd_documents`: registered file metadata, including canonical path, first Markdown heading, and the GTD display title. The display title is an app-level alias and does not rename the original Markdown file.
+
+Groups can be renamed, moved under another group, and deleted only when empty. Documents can be moved between groups, renamed in GTD without changing their filesystem path, and removed from GTD without deleting the original Markdown file.
+
+Directory imports use a preview command before registration: files register directly after path validation, while directories are recursively scanned for `.md` and `.markdown` files. The preview UI must let users choose which discovered files to register instead of registering the full scan result blindly.
 
 The Markdown content itself stays in the original local file. Rust validates the path, reads content for the editor, and saves with an atomic temporary-file rename.
 

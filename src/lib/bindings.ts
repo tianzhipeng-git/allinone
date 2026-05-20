@@ -159,9 +159,65 @@ async gtdCreateGroup(name: string, parentId: number | null) : Promise<Result<Gtd
     else return { status: "error", error: e  as any };
 }
 },
+async gtdRenameGroup(groupId: number, name: string) : Promise<Result<GtdGroup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_rename_group", { groupId, name }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdMoveGroup(groupId: number, parentId: number | null) : Promise<Result<GtdGroup, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_move_group", { groupId, parentId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdDeleteGroup(groupId: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_delete_group", { groupId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async gtdRegisterDocument(path: string, groupId: number, title: string | null) : Promise<Result<GtdDocument, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("gtd_register_document", { path, groupId, title }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdRenameDocument(documentId: number, title: string) : Promise<Result<GtdDocument, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_rename_document", { documentId, title }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdMoveDocument(documentId: number, groupId: number) : Promise<Result<GtdDocument, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_move_document", { documentId, groupId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdDeleteDocument(documentId: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_delete_document", { documentId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async gtdPreviewImportPath(path: string) : Promise<Result<GtdImportPreview, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("gtd_preview_import_path", { path }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -212,6 +268,7 @@ quick_pane_shortcut: string | null;
 language: string | null }
 export type GtdDocument = { id: number; group_id: number; title: string; path: string; markdown_heading: string | null; created_at: string; updated_at: string }
 export type GtdGroup = { id: number; parent_id: number | null; name: string; sort_order: number }
+export type GtdImportPreview = { path: string; is_directory: boolean; files: string[] }
 export type GtdTree = { groups: GtdGroup[]; documents: GtdDocument[] }
 export type JsonValue = null | boolean | number | string | JsonValue[] | Partial<{ [key in string]: JsonValue }>
 /**

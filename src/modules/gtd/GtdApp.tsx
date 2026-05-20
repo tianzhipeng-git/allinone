@@ -1,5 +1,5 @@
 import { FileText, Save } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -85,22 +85,11 @@ function GtdEditorSurface({
 export function GtdApp() {
   const { t } = useTranslation()
   const selectedDocumentId = useGtdStore(state => state.selectedDocumentId)
-  const setSelectedDocumentId = useGtdStore(
-    state => state.setSelectedDocumentId
-  )
   const treeQuery = useGtdTree()
   const documents = treeQuery.data?.documents
   const groups = treeQuery.data?.groups
   const selectedDocument = findDocument(documents ?? [], selectedDocumentId)
   const documentQuery = useGtdDocument(selectedDocument?.id ?? null)
-
-  useEffect(() => {
-    if (selectedDocumentId !== null || !documents || documents.length === 0) {
-      return
-    }
-
-    setSelectedDocumentId(documents[0]?.id ?? null)
-  }, [documents, selectedDocumentId, setSelectedDocumentId])
 
   if (treeQuery.isLoading) {
     return (

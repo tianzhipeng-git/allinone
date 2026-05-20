@@ -4,19 +4,20 @@ All static analysis tools configured in this app and how to use them.
 
 ## Quick Reference
 
-| Tool           | Purpose                  | Command                   | In check:all |
-| -------------- | ------------------------ | ------------------------- | ------------ |
-| TypeScript     | Type checking            | `pnpm run typecheck`      | Yes          |
-| ESLint         | Syntax, style, TS rules  | `pnpm run lint`           | Yes          |
-| Prettier       | Code formatting          | `pnpm run format:check`   | Yes          |
-| ast-grep       | Architecture patterns    | `pnpm run ast:lint`       | Yes          |
-| React Compiler | Automatic memoization    | Build-time                | Yes          |
-| cargo fmt      | Rust formatting          | `pnpm run rust:fmt:check` | Yes          |
-| clippy         | Rust linting             | `pnpm run rust:clippy`    | Yes          |
-| Vitest         | Frontend tests           | `pnpm run test:run`       | Yes          |
-| cargo test     | Rust tests               | `pnpm run rust:test`      | Yes          |
-| knip           | Unused code detection    | `pnpm run knip`           | No           |
-| jscpd          | Duplicate code detection | `pnpm run jscpd`          | No           |
+| Tool           | Purpose                  | Command                    | In check:all |
+| -------------- | ------------------------ | -------------------------- | ------------ |
+| TypeScript     | Type checking            | `pnpm run typecheck`       | Yes          |
+| ESLint         | Syntax, style, TS rules  | `pnpm run lint`            | Yes          |
+| File length    | Code file size limit     | `pnpm run lint:file-lines` | Yes          |
+| Prettier       | Code formatting          | `pnpm run format:check`    | Yes          |
+| ast-grep       | Architecture patterns    | `pnpm run ast:lint`        | Yes          |
+| React Compiler | Automatic memoization    | Build-time                 | Yes          |
+| cargo fmt      | Rust formatting          | `pnpm run rust:fmt:check`  | Yes          |
+| clippy         | Rust linting             | `pnpm run rust:clippy`     | Yes          |
+| Vitest         | Frontend tests           | `pnpm run test:run`        | Yes          |
+| cargo test     | Rust tests               | `pnpm run rust:test`       | Yes          |
+| knip           | Unused code detection    | `pnpm run knip`            | No           |
+| jscpd          | Duplicate code detection | `pnpm run jscpd`           | No           |
 
 ## Running All Checks
 
@@ -37,6 +38,10 @@ pnpm run lint:fix    # Auto-fix issues
 ```
 
 Configuration in `eslint.config.js`.
+
+`pnpm run lint` also enforces a maximum of 666 lines for each code file
+(`.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.rs`) through
+`scripts/check-file-lines.js`.
 
 ### Prettier
 

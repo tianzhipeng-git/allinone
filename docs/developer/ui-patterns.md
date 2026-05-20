@@ -309,6 +309,7 @@ Layout components should:
 
 - Accept `children` and `className` props
 - Use flexbox with `overflow-hidden` to prevent content bleed
+- Set `min-w-0` on flex/grid containers and on children that contain long, unbroken text
 - Not set external margins (let parent control spacing)
 
 ```tsx
@@ -325,6 +326,10 @@ export function LeftSideBar({ children, className }: SideBarProps) {
   )
 }
 ```
+
+### Dialog and Panel Overflow
+
+Pitfall notes and examples: [UI Pitfalls — Dialog and panel overflow](./ui-pitfalls/dialog-panel-overflow.md).
 
 ### Visibility with CSS
 

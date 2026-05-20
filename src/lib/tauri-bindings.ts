@@ -26,6 +26,7 @@ export type {
   AppPreferences,
   GtdDocument,
   GtdGroup,
+  GtdImportPreview,
   GtdTree,
   JsonValue,
   RecoveryError,
