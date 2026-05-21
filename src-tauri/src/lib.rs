@@ -4,6 +4,7 @@
 //! Command implementations are organized in the `commands` module,
 //! and shared types are in the `types` module.
 
+mod app_tray;
 mod bindings;
 mod commands;
 mod modules;
@@ -109,6 +110,9 @@ pub fn run() {
                 app.package_info().name
             );
 
+            #[cfg(desktop)]
+            app_tray::init(app)?;
+
             // Set up global shortcut plugin (without any shortcuts - we register them separately)
             #[cfg(desktop)]
             {
@@ -147,49 +151,28 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| match &event {
-            // macOS: Hide the main window instead of quitting so the dock icon can reopen it
-            // and the quick-pane shortcut works independently of the main window.
-            // On other platforms, the close proceeds normally and the app exits.
+            // Keep the desktop app resident in the system tray when the main window closes.
             RunEvent::WindowEvent {
                 label,
                 event: WindowEvent::CloseRequested { api, .. },
                 ..
             } if label == "main" => {
-                #[cfg(target_os = "macos")]
+                #[cfg(desktop)]
                 {
                     api.prevent_close();
-
-                    // Save window state before hiding
-                    use tauri_plugin_window_state::{AppHandleExt, StateFlags};
-                    if let Err(e) = app_handle.save_window_state(StateFlags::all()) {
-                        log::warn!("Failed to save window state: {e}");
-                    }
-
-                    // Hide the window, not the app. app_handle.hide() calls NSApplication.hide()
-                    // which sets system-level hidden state — showing an NSPanel while hidden
-                    // causes macOS to unhide the entire app, including the main window.
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.hide();
-                        log::info!("Main window hidden");
-                    }
+                    app_tray::hide_main_window(app_handle);
                 }
             }
 
             // macOS: Dock icon clicked — reopen the main window if it was hidden
             #[cfg(target_os = "macos")]
             RunEvent::Reopen { .. } => {
-                if let Some(window) = app_handle.get_webview_window("main") {
-                    if !window.is_visible().unwrap_or(true) {
-                        let _ = window.show();
-
-                        // The window-state plugin only auto-restores on app startup, not after
-                        // a hide/show cycle. Without this the window can appear at stale coords.
-                        use tauri_plugin_window_state::{StateFlags, WindowExt};
-                        let _ = window.restore_state(StateFlags::all());
-
-                        let _ = window.set_focus();
-                        log::info!("Main window reopened from dock");
-                    }
+                if app_handle
+                    .get_webview_window("main")
+                    .and_then(|window| window.is_visible().ok())
+                    .is_some_and(|visible| !visible)
+                {
+                    app_tray::show_main_window(app_handle);
                 }
             }
 

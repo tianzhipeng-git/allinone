@@ -61,6 +61,10 @@ Access features from the menu bar:
 
 All menu items have keyboard shortcuts and are also available in the command palette.
 
+### System Tray
+
+Closing the main window keeps allinone running in the system tray. Use the tray icon to show or hide the main window, or choose **Quit allinone** from the tray menu when you want to fully exit the app.
+
 ## Layout
 
 - **Title Bar**: Window controls and app title

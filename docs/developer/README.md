@@ -8,7 +8,7 @@ Technical documentation for building and extending this app. These docs describe
 | ----------------------------------------------- | ------------------------------------------------------- |
 | [Architecture Guide](./architecture-guide.md)   | High-level overview, mental models, system architecture |
 | [Module Architecture](./module-architecture.md) | Built-in app module boundaries and registration         |
-| [GTD Module](./gtd-module.md)                   | Global Todo module |
+| [GTD Module](./gtd-module.md)                   | Global Todo module                                      |
 | [Rust Architecture](./rust-architecture.md)     | Rust module organization and patterns                   |
 | [State Management](./state-management.md)       | Three-layer state onion, Zustand, TanStack Query        |
 | [Error Handling](./error-handling.md)           | Error propagation, user feedback, retry patterns        |
@@ -20,19 +20,20 @@ Technical documentation for building and extending this app. These docs describe
 | [Command System](./command-system.md)         | Unified action dispatch, command registration   |
 | [Keyboard Shortcuts](./keyboard-shortcuts.md) | Global shortcut handling, platform modifiers    |
 | [Menus](./menus.md)                           | Native menu building with i18n                  |
+| [System Tray](./system-tray.md)               | Desktop tray icon behavior and window lifecycle |
 | [Quick Panes](./quick-panes.md)               | Multi-window quick entry pattern                |
 | [Tauri Commands](./tauri-commands.md)         | Type-safe Rust-TypeScript bridge (tauri-specta) |
 | [Tauri Plugins](./tauri-plugins.md)           | Plugin usage and configuration                  |
 
 ## UI & UX
 
-| Document                                   | Description                                 |
-| ------------------------------------------ | ------------------------------------------- |
-| [UI Patterns](./ui-patterns.md)            | CSS architecture, shadcn/ui components      |
+| Document                                   | Description                                   |
+| ------------------------------------------ | --------------------------------------------- |
+| [UI Patterns](./ui-patterns.md)            | CSS architecture, shadcn/ui components        |
 | [UI Pitfalls](./ui-pitfalls.md)            | WebView / menu / layout regressions (indexed) |
-| [Internationalization](./i18n-patterns.md) | Translation system, locale-ready UI         |
-| [Notifications](./notifications.md)        | Toast and native notifications              |
-| [Cross-Platform](./cross-platform.md)      | Platform detection, OS-specific adaptations |
+| [Internationalization](./i18n-patterns.md) | Translation system, locale-ready UI           |
+| [Notifications](./notifications.md)        | Toast and native notifications                |
+| [Cross-Platform](./cross-platform.md)      | Platform detection, OS-specific adaptations   |
 
 ## Data & Storage
 
