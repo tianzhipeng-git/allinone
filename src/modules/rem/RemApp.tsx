@@ -1,204 +1,304 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Textarea } from '@/components/ui/textarea'
+import type { RemReminder, RemUpsertReminderInput } from '@/lib/tauri-bindings'
 import {
-  Bell,
   Calendar,
   CalendarClock,
   Infinity as InfinityIcon,
-  Link,
-  Play,
+  Plus,
   Search,
   Sun,
-  Tag,
-  Pause,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import {
+  useDeleteReminder,
+  useRemDashboard,
+  useToggleReminder,
+  useUpdateLogStatus,
+  useUpsertReminder,
+} from './services'
 
-type Frequency = 'day' | 'week' | 'month' | 'year'
-
-interface ReminderItem {
-  id: string
-  title: string
-  description: string
-  active: boolean
-  tag: string
-  natural: string
-  frequency: Frequency
-  webhook: boolean
-}
-
-const sampleReminders: ReminderItem[] = [
-  {
-    id: 'r1',
-    title: '喝水提醒',
-    description: '每小时补充水分，防止脱水',
-    active: true,
-    tag: '健康',
-    natural: '每小时一次',
-    frequency: 'day',
-    webhook: false,
-  },
-  {
-    id: 'r2',
-    title: '站立拉伸',
-    description: '每周一三五 09:00 做肩颈拉伸',
-    active: true,
-    tag: '健康',
-    natural: '周一/三/五 09:00',
-    frequency: 'week',
-    webhook: true,
-  },
-  {
-    id: 'r3',
-    title: '信用卡对账',
-    description: '每月 10 日检查账单并归档',
-    active: false,
-    tag: '生活',
-    natural: '每月 10 日 20:00',
-    frequency: 'month',
-    webhook: true,
-  },
-  {
-    id: 'r4',
-    title: '年度体检预约',
-    description: '每年 1 月安排年度体检',
-    active: true,
-    tag: '健康',
-    natural: '每年 1 月 5 日 10:00',
-    frequency: 'year',
-    webhook: false,
-  },
-]
+type TabKey = 'home' | 'logs'
 
 export function RemApp() {
-  const { t } = useTranslation()
+  const dashboardQuery = useRemDashboard()
+  const upsertMutation = useUpsertReminder()
+  const toggleMutation = useToggleReminder()
+  const deleteMutation = useDeleteReminder()
+  const updateLogMutation = useUpdateLogStatus()
+
+  const [activeTab, setActiveTab] = useState<TabKey>('home')
   const [activeTag, setActiveTag] = useState('全部')
   const [query, setQuery] = useState('')
-  const [items, setItems] = useState(sampleReminders)
+  const [editing, setEditing] = useState<RemReminder | null>(null)
+  const [showEditor, setShowEditor] = useState(false)
 
-  const tags = useMemo(() => {
-    return ['全部', ...new Set(items.map(item => item.tag))]
-  }, [items])
-
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
-      const byTag = activeTag === '全部' || item.tag === activeTag
-      const byQuery =
-        query.length === 0 ||
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        item.description.toLowerCase().includes(query.toLowerCase())
-      return byTag && byQuery
-    })
-  }, [items, activeTag, query])
-
-  const grouped = useMemo(() => {
-    return {
-      day: filteredItems.filter(item => item.frequency === 'day'),
-      week: filteredItems.filter(item => item.frequency === 'week'),
-      month: filteredItems.filter(item => item.frequency === 'month'),
-      year: filteredItems.filter(item => item.frequency === 'year'),
-    }
-  }, [filteredItems])
-
-  const toggleActive = (id: string) => {
-    setItems(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, active: !item.active } : item
-      )
-    )
+  if (dashboardQuery.isLoading) {
+    return <Skeleton className="m-4 h-full" />
   }
 
+  if (dashboardQuery.isError || !dashboardQuery.data) {
+    return <div className="p-4 text-sm text-destructive">加载 REM 失败</div>
+  }
+
+  const reminders = dashboardQuery.data.reminders
+  const logs = dashboardQuery.data.logs
+  const tags = ['全部', ...new Set(reminders.map(item => item.tag))]
+
+  const filteredReminders = reminders.filter(item => {
+    const byTag = activeTag === '全部' || item.tag === activeTag
+    const byQuery =
+      query.length === 0 ||
+      item.title.toLowerCase().includes(query.toLowerCase()) ||
+      item.description.toLowerCase().includes(query.toLowerCase())
+    return byTag && byQuery
+  })
+
+  const grouped = {
+    day: filteredReminders.filter(
+      item => (item.interval_minutes ?? 10_000) <= 60 * 24
+    ),
+    week: filteredReminders.filter(
+      item =>
+        (item.interval_minutes ?? 10_000) > 60 * 24 &&
+        (item.interval_minutes ?? 10_000) <= 60 * 24 * 7
+    ),
+    month: filteredReminders.filter(
+      item =>
+        (item.interval_minutes ?? 10_000) > 60 * 24 * 7 &&
+        (item.interval_minutes ?? 10_000) <= 60 * 24 * 30
+    ),
+    year: filteredReminders.filter(
+      item => (item.interval_minutes ?? 10_000) > 60 * 24 * 30
+    ),
+  }
+
+  const pendingLogs = logs.filter(log => log.status === 'Pending')
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+    <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{t('modules.rem.title')}</h1>
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold">怪奇提醒（REM）</h1>
           <p className="text-sm text-muted-foreground">
-            {t('modules.rem.subtitle')}
+            首页 / 日志 / 详情 / 编辑 全流程
           </p>
         </div>
-        <Button>{t('modules.rem.create')}</Button>
+        <Button
+          onClick={() => {
+            setEditing(null)
+            setShowEditor(true)
+          }}
+        >
+          <Plus className="size-4" />
+          新建提醒
+        </Button>
       </header>
 
-      <div className="flex items-center gap-2">
-        <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            placeholder={t('modules.rem.searchPlaceholder')}
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-          />
-        </div>
-        <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-2 pb-2">
-            {tags.map(tag => (
-              <Button
-                key={tag}
-                type="button"
-                variant={activeTag === tag ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveTag(tag)}
-              >
-                {tag}
-              </Button>
-            ))}
-          </div>
-        </ScrollArea>
+      <div className="flex gap-2">
+        <Button
+          variant={activeTab === 'home' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('home')}
+        >
+          首页
+        </Button>
+        <Button
+          variant={activeTab === 'logs' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('logs')}
+        >
+          全局日志
+        </Button>
       </div>
+
+      {activeTab === 'home' ? (
+        <>
+          <div className="flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="absolute left-2 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                className="pl-8"
+                placeholder="搜索提醒"
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+              />
+            </div>
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2 pb-2">
+                {tags.map(tag => (
+                  <Button
+                    key={tag}
+                    size="sm"
+                    variant={activeTag === tag ? 'default' : 'outline'}
+                    onClick={() => setActiveTag(tag)}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-2">
+            <Section
+              title="天级"
+              icon={Sun}
+              items={grouped.day}
+              onEdit={x => {
+                setEditing(x)
+                setShowEditor(true)
+              }}
+              onToggle={x =>
+                toggleMutation.mutate({ reminderId: x.id, active: !x.active })
+              }
+              onDelete={x => deleteMutation.mutate(x.id)}
+            />
+            <Section
+              title="周级"
+              icon={CalendarClock}
+              items={grouped.week}
+              onEdit={x => {
+                setEditing(x)
+                setShowEditor(true)
+              }}
+              onToggle={x =>
+                toggleMutation.mutate({ reminderId: x.id, active: !x.active })
+              }
+              onDelete={x => deleteMutation.mutate(x.id)}
+            />
+            <Section
+              title="月级"
+              icon={Calendar}
+              items={grouped.month}
+              onEdit={x => {
+                setEditing(x)
+                setShowEditor(true)
+              }}
+              onToggle={x =>
+                toggleMutation.mutate({ reminderId: x.id, active: !x.active })
+              }
+              onDelete={x => deleteMutation.mutate(x.id)}
+            />
+            <Section
+              title="年级"
+              icon={InfinityIcon}
+              items={grouped.year}
+              onEdit={x => {
+                setEditing(x)
+                setShowEditor(true)
+              }}
+              onToggle={x =>
+                toggleMutation.mutate({ reminderId: x.id, active: !x.active })
+              }
+              onDelete={x => deleteMutation.mutate(x.id)}
+            />
+          </div>
+        </>
+      ) : (
+        <Card className="min-h-0 flex-1">
+          <CardHeader>
+            <CardTitle>全局日志</CardTitle>
+          </CardHeader>
+          <CardContent className="min-h-0">
+            <ScrollArea className="h-[420px]">
+              <div className="space-y-2">
+                {logs.map(log => {
+                  const reminder = reminders.find(r => r.id === log.reminder_id)
+                  return (
+                    <div key={log.id} className="rounded border p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {reminder?.title ?? '未知提醒'} ·{' '}
+                          {new Date(log.triggered_at).toLocaleString()}
+                        </div>
+                        <Badge>{log.status}</Badge>
+                      </div>
+                      <div className="mt-2 text-muted-foreground">
+                        {log.note ?? '无备注'}
+                      </div>
+                      {log.status === 'Pending' ? (
+                        <div className="mt-2 flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              updateLogMutation.mutate({
+                                logId: log.id,
+                                status: 'Confirmed',
+                              })
+                            }
+                          >
+                            确认
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              updateLogMutation.mutate({
+                                logId: log.id,
+                                status: 'Ignored',
+                              })
+                            }
+                          >
+                            忽略
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
 
       <Separator />
-
-      <div className="grid min-h-0 flex-1 gap-3 md:grid-cols-2">
-        <FrequencySection
-          title={t('modules.rem.sections.day')}
-          icon={Sun}
-          items={grouped.day}
-          onToggle={toggleActive}
-        />
-        <FrequencySection
-          title={t('modules.rem.sections.week')}
-          icon={CalendarClock}
-          items={grouped.week}
-          onToggle={toggleActive}
-        />
-        <FrequencySection
-          title={t('modules.rem.sections.month')}
-          icon={Calendar}
-          items={grouped.month}
-          onToggle={toggleActive}
-        />
-        <FrequencySection
-          title={t('modules.rem.sections.year')}
-          icon={InfinityIcon}
-          items={grouped.year}
-          onToggle={toggleActive}
-        />
+      <div className="text-xs text-muted-foreground">
+        MenuBar 预览：待处理{' '}
+        <Badge variant="secondary">{pendingLogs.length}</Badge>
       </div>
+
+      <ReminderEditor
+        open={showEditor}
+        reminder={editing}
+        onClose={() => setShowEditor(false)}
+        onSubmit={async input => {
+          await upsertMutation.mutateAsync(input)
+          setShowEditor(false)
+        }}
+      />
     </div>
   )
 }
 
-function FrequencySection({
+function Section({
   title,
   icon: Icon,
   items,
+  onEdit,
   onToggle,
+  onDelete,
 }: {
   title: string
   icon: typeof Sun
-  items: ReminderItem[]
-  onToggle: (id: string) => void
+  items: RemReminder[]
+  onEdit: (r: RemReminder) => void
+  onToggle: (r: RemReminder) => void
+  onDelete: (r: RemReminder) => void
 }) {
   return (
     <Card className="min-h-0">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Icon className="size-4" />
           {title}
@@ -206,63 +306,143 @@ function FrequencySection({
         </CardTitle>
       </CardHeader>
       <CardContent className="min-h-0">
-        <ScrollArea className="h-[240px] pr-3">
-          <div className="space-y-3">
+        <ScrollArea className="h-[220px]">
+          <div className="space-y-2">
             {items.map(item => (
-              <Card key={item.id} className="border-muted">
-                <CardContent className="space-y-3 p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span
-                        className={cn(
-                          'inline-block size-2 rounded-full',
-                          item.active ? 'bg-emerald-500' : 'bg-rose-500'
-                        )}
-                      />
-                      {item.active ? '活跃' : '暂停'}
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-7"
-                      onClick={() => onToggle(item.id)}
-                    >
-                      {item.active ? (
-                        <Pause className="size-4" />
-                      ) : (
-                        <Play className="size-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  <div>
-                    <div className="line-clamp-2 text-sm font-medium">
-                      {item.title}
-                    </div>
-                    <div className="line-clamp-2 text-xs text-muted-foreground">
-                      {item.description}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Bell className="size-3.5" />
-                      {item.natural}
-                    </span>
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1">
-                        <Tag className="size-3.5" />
-                        {item.tag}
-                      </span>
-                      {item.webhook ? <Link className="size-3.5" /> : null}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={item.id} className="rounded border p-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">{item.title}</div>
+                  <Badge variant={item.active ? 'default' : 'outline'}>
+                    {item.active ? '活跃' : '暂停'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {item.description}
+                </div>
+                <div className="mt-2 text-xs">{item.natural_text}</div>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onEdit(item)}
+                  >
+                    详情/编辑
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onToggle(item)}
+                  >
+                    {item.active ? '暂停' : '启用'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => onDelete(item)}
+                  >
+                    删除
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
+  )
+}
+
+function ReminderEditor({
+  open,
+  reminder,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean
+  reminder: RemReminder | null
+  onClose: () => void
+  onSubmit: (input: RemUpsertReminderInput) => Promise<void>
+}) {
+  const [title, setTitle] = useState(reminder?.title ?? '')
+  const [description, setDescription] = useState(reminder?.description ?? '')
+  const [tag, setTag] = useState(reminder?.tag ?? '默认')
+  const [cronExpr, setCronExpr] = useState(
+    reminder?.cron_expr ?? '0 9 * * 1,3,5'
+  )
+  const [naturalText, setNaturalText] = useState(
+    reminder?.natural_text ?? '每周一三五 09:00'
+  )
+
+  const payload = useMemo<RemUpsertReminderInput>(
+    () => ({
+      id: reminder?.id ?? null,
+      title,
+      description,
+      tag,
+      active: reminder?.active ?? true,
+      schedule_mode: 'Cron',
+      cron_expr: cronExpr,
+      interval_minutes: null,
+      natural_text: naturalText,
+      webhook_url: null,
+      notify_system: true,
+    }),
+    [
+      reminder?.id,
+      reminder?.active,
+      title,
+      description,
+      tag,
+      cronExpr,
+      naturalText,
+    ]
+  )
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{reminder ? '编辑提醒' : '创建提醒'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Input
+            placeholder="名称"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+          />
+          <Textarea
+            placeholder="描述"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+          />
+          <Input
+            placeholder="标签"
+            value={tag}
+            onChange={e => setTag(e.target.value)}
+          />
+          <Input
+            placeholder="Cron"
+            value={cronExpr}
+            onChange={e => setCronExpr(e.target.value)}
+          />
+          <Input
+            placeholder="自然语言"
+            value={naturalText}
+            onChange={e => setNaturalText(e.target.value)}
+          />
+        </div>
+        <div className="mt-2 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            取消
+          </Button>
+          <Button
+            onClick={() => void onSubmit(payload)}
+            disabled={!title.trim()}
+          >
+            保存
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
