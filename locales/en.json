@@ -1,6 +1,5 @@
 {
   "app.name": "Tauri Template",
-
   "menu.about": "About {{appName}}",
   "menu.checkForUpdates": "Check for Updates...",
   "menu.preferences": "Preferences...",
@@ -14,13 +13,11 @@
   "menu.view": "View",
   "menu.toggleLeftSidebar": "Toggle Left Sidebar",
   "menu.toggleRightSidebar": "Toggle Right Sidebar",
-
   "preferences.title": "Preferences",
   "preferences.description": "Customize your application preferences here.",
   "preferences.general": "General",
   "preferences.appearance": "Appearance",
   "preferences.advanced": "Advanced",
-
   "preferences.general.keyboardShortcuts": "Keyboard Shortcuts",
   "preferences.general.quickPaneShortcut": "Quick Pane Shortcut",
   "preferences.general.quickPaneShortcutDescription": "Global keyboard shortcut to toggle the quick pane from any application",
@@ -30,7 +27,6 @@
   "preferences.general.exampleTextPlaceholder": "Enter example text",
   "preferences.general.exampleToggle": "Example Toggle Setting",
   "preferences.general.exampleToggleDescription": "This is an example switch/toggle setting (not persisted)",
-
   "preferences.appearance.theme": "Theme",
   "preferences.appearance.colorTheme": "Color Theme",
   "preferences.appearance.colorThemeDescription": "Choose your preferred color theme",
@@ -41,7 +37,6 @@
   "preferences.appearance.language": "Language",
   "preferences.appearance.languageDescription": "Choose your preferred display language",
   "preferences.appearance.language.system": "System Default",
-
   "preferences.advanced.title": "Example Advanced Settings",
   "preferences.advanced.toggle": "Example Advanced Toggle",
   "preferences.advanced.toggleDescription": "This is an example advanced toggle setting (not persisted)",
@@ -50,12 +45,10 @@
   "preferences.advanced.option1": "Example Option 1",
   "preferences.advanced.option2": "Example Option 2",
   "preferences.advanced.option3": "Example Option 3",
-
   "common.enabled": "Enabled",
   "common.disabled": "Disabled",
   "common.reset": "Reset",
   "common.cancel": "Cancel",
-
   "modules.launcher": "Modules",
   "modules.gtd.title": "Global Todo",
   "modules.gtd.sidebar.title": "Todo Files",
@@ -112,14 +105,12 @@
   "modules.gtd.toast.noMarkdownFiles": "No Markdown files found",
   "modules.gtd.toast.noImportSelection": "Select at least one Markdown file",
   "modules.gtd.toast.noGroup": "Create a group before registering files",
-
   "commands.group.navigation": "Navigation",
   "commands.group.settings": "Settings",
   "commands.group.window": "Window",
   "commands.group.notification": "Notifications",
   "commands.group.debug": "Debug",
   "commands.group.other": "Other",
-
   "commands.showLeftSidebar.label": "Show Left Sidebar",
   "commands.showLeftSidebar.description": "Show the left sidebar",
   "commands.hideLeftSidebar.label": "Hide Left Sidebar",
@@ -130,7 +121,6 @@
   "commands.hideRightSidebar.description": "Hide the right sidebar",
   "commands.openPreferences.label": "Open Preferences",
   "commands.openPreferences.description": "Open the application preferences",
-
   "commands.windowClose.label": "Close Window",
   "commands.windowClose.description": "Close the current window",
   "commands.windowMinimize.label": "Minimize Window",
@@ -141,21 +131,17 @@
   "commands.windowFullscreen.description": "Enter fullscreen mode",
   "commands.windowExitFullscreen.label": "Exit Fullscreen",
   "commands.windowExitFullscreen.description": "Exit fullscreen mode",
-
   "commands.testToast.label": "Test Toast Notification",
   "commands.testToast.description": "Show a test toast notification",
-
   "commandPalette.title": "Command Palette",
   "commandPalette.placeholder": "Type a command or search...",
   "commandPalette.noResults": "No results found.",
-
   "titlebar.default": "allinone",
   "titlebar.showLeftSidebar": "Show Left Sidebar",
   "titlebar.hideLeftSidebar": "Hide Left Sidebar",
   "titlebar.showRightSidebar": "Show Right Sidebar",
   "titlebar.hideRightSidebar": "Hide Right Sidebar",
   "titlebar.settings": "Settings",
-
   "toast.success.preferencesSaved": "Preferences saved",
   "toast.success.testToast": "Test Toast",
   "toast.success.testToastDescription": "This is a test notification",
@@ -167,5 +153,13 @@
   "toast.error.windowMinimizeFailed": "Failed to minimize window: {{message}}",
   "toast.error.windowMaximizeFailed": "Failed to toggle maximize: {{message}}",
   "toast.error.fullscreenEnterFailed": "Failed to enter fullscreen: {{message}}",
-  "toast.error.fullscreenExitFailed": "Failed to exit fullscreen: {{message}}"
+  "toast.error.fullscreenExitFailed": "Failed to exit fullscreen: {{message}}",
+  "modules.rem.title": "Strange Reminder",
+  "modules.rem.subtitle": "Flexible schedules with a complete trigger log loop",
+  "modules.rem.create": "Create Reminder",
+  "modules.rem.searchPlaceholder": "Search reminders by title or description...",
+  "modules.rem.sections.day": "Day-level (≤ 1 day)",
+  "modules.rem.sections.week": "Week-level (1-7 days)",
+  "modules.rem.sections.month": "Month-level (7-30 days)",
+  "modules.rem.sections.year": "Year-level (> 30 days)"
 }

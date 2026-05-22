@@ -1,7 +1,8 @@
 import { gtdModule } from './gtd'
+import { remModule } from './rem'
 import type { AppModule } from './types'
 
-export const modules: AppModule[] = [gtdModule].sort(
+export const modules: AppModule[] = [gtdModule, remModule].sort(
   (a, b) => a.order - b.order
 )
 

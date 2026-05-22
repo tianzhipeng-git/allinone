@@ -1,6 +1,5 @@
 {
   "app.name": "Tauri 模板",
-
   "menu.about": "关于 {{appName}}",
   "menu.checkForUpdates": "检查更新...",
   "menu.preferences": "偏好设置...",
@@ -14,13 +13,11 @@
   "menu.view": "视图",
   "menu.toggleLeftSidebar": "切换左侧边栏",
   "menu.toggleRightSidebar": "切换右侧边栏",
-
   "preferences.title": "偏好设置",
   "preferences.description": "在这里自定义应用偏好设置。",
   "preferences.general": "通用",
   "preferences.appearance": "外观",
   "preferences.advanced": "高级",
-
   "preferences.general.keyboardShortcuts": "键盘快捷键",
   "preferences.general.quickPaneShortcut": "快速面板快捷键",
   "preferences.general.quickPaneShortcutDescription": "用于从任意应用切换快速面板的全局键盘快捷键",
@@ -30,7 +27,6 @@
   "preferences.general.exampleTextPlaceholder": "输入示例文本",
   "preferences.general.exampleToggle": "示例开关设置",
   "preferences.general.exampleToggleDescription": "这是一个开关设置示例（不会持久化）",
-
   "preferences.appearance.theme": "主题",
   "preferences.appearance.colorTheme": "颜色主题",
   "preferences.appearance.colorThemeDescription": "选择你偏好的颜色主题",
@@ -41,7 +37,6 @@
   "preferences.appearance.language": "语言",
   "preferences.appearance.languageDescription": "选择你偏好的显示语言",
   "preferences.appearance.language.system": "跟随系统",
-
   "preferences.advanced.title": "示例高级设置",
   "preferences.advanced.toggle": "示例高级开关",
   "preferences.advanced.toggleDescription": "这是一个高级开关设置示例（不会持久化）",
@@ -50,12 +45,10 @@
   "preferences.advanced.option1": "示例选项 1",
   "preferences.advanced.option2": "示例选项 2",
   "preferences.advanced.option3": "示例选项 3",
-
   "common.enabled": "已启用",
   "common.disabled": "已禁用",
   "common.reset": "重置",
   "common.cancel": "取消",
-
   "modules.launcher": "模块",
   "modules.gtd.title": "全局待办",
   "modules.gtd.sidebar.title": "待办文件",
@@ -112,14 +105,12 @@
   "modules.gtd.toast.noMarkdownFiles": "没有找到 Markdown 文件",
   "modules.gtd.toast.noImportSelection": "请至少选择一个 Markdown 文件",
   "modules.gtd.toast.noGroup": "请先创建一个分组再注册文件",
-
   "commands.group.navigation": "导航",
   "commands.group.settings": "设置",
   "commands.group.window": "窗口",
   "commands.group.notification": "通知",
   "commands.group.debug": "调试",
   "commands.group.other": "其他",
-
   "commands.showLeftSidebar.label": "显示左侧边栏",
   "commands.showLeftSidebar.description": "显示左侧边栏",
   "commands.hideLeftSidebar.label": "隐藏左侧边栏",
@@ -130,7 +121,6 @@
   "commands.hideRightSidebar.description": "隐藏右侧边栏",
   "commands.openPreferences.label": "打开偏好设置",
   "commands.openPreferences.description": "打开应用偏好设置",
-
   "commands.windowClose.label": "关闭窗口",
   "commands.windowClose.description": "关闭当前窗口",
   "commands.windowMinimize.label": "最小化窗口",
@@ -141,21 +131,17 @@
   "commands.windowFullscreen.description": "进入全屏模式",
   "commands.windowExitFullscreen.label": "退出全屏",
   "commands.windowExitFullscreen.description": "退出全屏模式",
-
   "commands.testToast.label": "测试 Toast 通知",
   "commands.testToast.description": "显示一条测试 Toast 通知",
-
   "commandPalette.title": "命令面板",
   "commandPalette.placeholder": "输入命令或搜索...",
   "commandPalette.noResults": "未找到结果。",
-
   "titlebar.default": "allinone",
   "titlebar.showLeftSidebar": "显示左侧边栏",
   "titlebar.hideLeftSidebar": "隐藏左侧边栏",
   "titlebar.showRightSidebar": "显示右侧边栏",
   "titlebar.hideRightSidebar": "隐藏右侧边栏",
   "titlebar.settings": "设置",
-
   "toast.success.preferencesSaved": "偏好设置已保存",
   "toast.success.testToast": "测试 Toast",
   "toast.success.testToastDescription": "这是一条测试通知",
@@ -167,5 +153,13 @@
   "toast.error.windowMinimizeFailed": "最小化窗口失败：{{message}}",
   "toast.error.windowMaximizeFailed": "切换最大化失败：{{message}}",
   "toast.error.fullscreenEnterFailed": "进入全屏失败：{{message}}",
-  "toast.error.fullscreenExitFailed": "退出全屏失败：{{message}}"
+  "toast.error.fullscreenExitFailed": "退出全屏失败：{{message}}",
+  "modules.rem.title": "怪奇提醒",
+  "modules.rem.subtitle": "高自由度周期提醒与日志闭环",
+  "modules.rem.create": "创建提醒",
+  "modules.rem.searchPlaceholder": "搜索提醒名称或描述...",
+  "modules.rem.sections.day": "天级（≤ 1 天）",
+  "modules.rem.sections.week": "周级（1-7 天）",
+  "modules.rem.sections.month": "月级（7-30 天）",
+  "modules.rem.sections.year": "年级（> 30 天）"
 }
