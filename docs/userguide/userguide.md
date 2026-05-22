@@ -64,6 +64,7 @@ All menu items have keyboard shortcuts and are also available in the command pal
 ### System Tray
 
 Closing the main window keeps allinone running in the system tray. Use the tray icon to show or hide the main window, or choose **Quit allinone** from the tray menu when you want to fully exit the app.
+On macOS, closing the main window also removes allinone from the Dock until you show the window again from the tray.
 
 ## Layout
 

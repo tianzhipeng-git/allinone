@@ -55,6 +55,8 @@ pub fn init(app: &tauri::App) -> tauri::Result<()> {
 /// Shows and focuses the main window.
 #[cfg(desktop)]
 pub fn show_main_window(app: &AppHandle<Wry>) {
+    set_dock_visible(app, true);
+
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         if let Err(e) = window.show() {
             log::warn!("Failed to show main window: {e}");
@@ -98,4 +100,16 @@ pub fn hide_main_window(app: &AppHandle<Wry>) {
             log::info!("Main window hidden to tray");
         }
     }
+
+    set_dock_visible(app, false);
 }
+
+#[cfg(target_os = "macos")]
+fn set_dock_visible(app: &AppHandle<Wry>, visible: bool) {
+    if let Err(e) = app.set_dock_visibility(visible) {
+        log::warn!("Failed to set Dock visibility to {visible}: {e}");
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn set_dock_visible(_app: &AppHandle<Wry>, _visible: bool) {}
