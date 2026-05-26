@@ -31,6 +31,11 @@ export function TitleBarLeftActions() {
             ? 'titlebar.hideLeftSidebar'
             : 'titlebar.showLeftSidebar'
         )}
+        aria-label={t(
+          leftSidebarVisible
+            ? 'titlebar.hideLeftSidebar'
+            : 'titlebar.showLeftSidebar'
+        )}
       >
         {leftSidebarVisible ? (
           <PanelLeftClose className="h-3 w-3" />
@@ -67,6 +72,7 @@ export function TitleBarRightActions() {
         size="icon"
         className="h-6 w-6 text-foreground/70 hover:text-foreground"
         title={t('titlebar.settings')}
+        aria-label={t('titlebar.settings')}
       >
         <Settings className="h-3 w-3" />
       </Button>
@@ -77,6 +83,11 @@ export function TitleBarRightActions() {
         size="icon"
         className="h-6 w-6 text-foreground/70 hover:text-foreground"
         title={t(
+          rightSidebarVisible
+            ? 'titlebar.hideRightSidebar'
+            : 'titlebar.showRightSidebar'
+        )}
+        aria-label={t(
           rightSidebarVisible
             ? 'titlebar.hideRightSidebar'
             : 'titlebar.showRightSidebar'

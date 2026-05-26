@@ -4,11 +4,11 @@
 
 ## 目录
 
-| 主题 | 文档 |
-| --- | --- |
-| 自定义应用菜单后 WebView 内复制、粘贴、全选异常 | [native-menu-webview-text-editing.md](./ui-pitfalls/native-menu-webview-text-editing.md) |
-| 对话框 / 面板中长路径等导致布局、输入框被挤出 | [dialog-panel-overflow.md](./ui-pitfalls/dialog-panel-overflow.md) |
-| GTD 侧栏树遇到的拖拽/展开折叠问题（react-arborist + Tauri DnD、点击与选中） | [gtd-sidebar-tree-arborist.md](./ui-pitfalls/gtd-sidebar-tree-arborist.md) |
+| 主题                                                                        | 文档                                                                                     |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 自定义应用菜单后 WebView 内复制、粘贴、全选异常                             | [native-menu-webview-text-editing.md](./ui-pitfalls/native-menu-webview-text-editing.md) |
+| 对话框 / 面板中长路径等导致布局、输入框被挤出                               | [dialog-panel-overflow.md](./ui-pitfalls/dialog-panel-overflow.md)                       |
+| GTD 侧栏树遇到的拖拽/展开折叠问题（react-arborist + Tauri DnD、点击与选中） | [gtd-sidebar-tree-arborist.md](./ui-pitfalls/gtd-sidebar-tree-arborist.md)               |
 
 ## 维护约定
 

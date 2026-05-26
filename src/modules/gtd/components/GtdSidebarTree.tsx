@@ -147,6 +147,7 @@ function GtdTreeNode({
             size="icon-sm"
             className="size-6"
             title={renameLabel}
+            aria-label={renameLabel}
             onClick={event => {
               event.stopPropagation()
               onRename({
@@ -164,6 +165,7 @@ function GtdTreeNode({
             size="icon-sm"
             className="size-6 text-muted-foreground hover:text-destructive"
             title={deleteLabel}
+            aria-label={deleteLabel}
             onClick={event => {
               event.stopPropagation()
               if (data.type === 'group') {
