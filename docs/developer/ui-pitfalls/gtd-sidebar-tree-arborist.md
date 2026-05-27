@@ -24,4 +24,4 @@ Maintenance notes so we avoid regressing UX that bit us during DND/refactor.
 7. **`disableDrop`**  
    Only allow dropping onto **`group`** parents (documents are leaves). Arborist passes the **destination parent** node, not necessarily the hovered row’s own data shape—check **`parentNode.isRoot`** as well.
 
-**Runtime behavior summary:** The GTD tree uses `react-arborist`. **Folder clicks only toggle.** **Dragging** uses **`dndManager` + grip-only **`dragHandle`**. **Moves** normalize root drops via the hidden inbox group in **`GtdRightSidebar`**.
+**Runtime behavior summary:** The GTD tree uses `react-arborist`. **Folder clicks only toggle.** **Dragging** uses **`dndManager` + grip-only **`dragHandle`**. **Moves** normalize root drops via the hidden inbox group in **`GtdRightSidebar`\*\*.

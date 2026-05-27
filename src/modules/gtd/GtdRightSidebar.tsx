@@ -371,6 +371,9 @@ export function GtdRightSidebar() {
             title={t('modules.gtd.actions.newGroupUnder', {
               group: selectedGroupName,
             })}
+            aria-label={t('modules.gtd.actions.newGroupUnder', {
+              group: selectedGroupName,
+            })}
             onClick={() => setGroupDialogOpen(true)}
           >
             <FolderPlus className="size-4" aria-hidden="true" />
@@ -380,6 +383,7 @@ export function GtdRightSidebar() {
             variant="ghost"
             size="icon-sm"
             title={t('modules.gtd.actions.pastePath')}
+            aria-label={t('modules.gtd.actions.pastePath')}
             onClick={() => setPathDialogOpen(true)}
           >
             <ClipboardPaste className="size-4" aria-hidden="true" />
@@ -389,6 +393,7 @@ export function GtdRightSidebar() {
             variant="ghost"
             size="icon-sm"
             title={t('modules.gtd.actions.registerFile')}
+            aria-label={t('modules.gtd.actions.registerFile')}
             onClick={handleRegisterDocument}
             disabled={registerDocument.isPending}
           >
