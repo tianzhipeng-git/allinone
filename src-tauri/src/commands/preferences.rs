@@ -69,10 +69,12 @@ pub async fn load_preferences(app: AppHandle) -> Result<AppPreferences, String> 
         format!("Failed to read preferences file: {e}")
     })?;
 
-    let preferences: AppPreferences = serde_json::from_str(&contents).map_err(|e| {
+    let mut preferences: AppPreferences = serde_json::from_str(&contents).map_err(|e| {
         log::error!("Failed to parse preferences JSON: {e}");
         format!("Failed to parse preferences: {e}")
     })?;
+
+    preferences.normalize_sidebar_layout();
 
     log::info!("Successfully loaded preferences");
     Ok(preferences)
@@ -82,9 +84,14 @@ pub async fn load_preferences(app: AppHandle) -> Result<AppPreferences, String> 
 /// Uses atomic write (temp file + rename) to prevent corruption.
 #[tauri::command]
 #[specta::specta]
-pub async fn save_preferences(app: AppHandle, preferences: AppPreferences) -> Result<(), String> {
+pub async fn save_preferences(
+    app: AppHandle,
+    mut preferences: AppPreferences,
+) -> Result<(), String> {
     // Validate theme value
     validate_theme(&preferences.theme)?;
+
+    preferences.normalize_sidebar_layout();
 
     log::debug!("Saving preferences to disk: {preferences:?}");
     let prefs_path = get_preferences_path(&app)?;

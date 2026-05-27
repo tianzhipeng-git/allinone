@@ -6,7 +6,7 @@ Patterns for saving and loading data to disk.
 
 | Need               | Solution           | When to Use                                                           |
 | ------------------ | ------------------ | --------------------------------------------------------------------- |
-| App preferences    | Preferences System | Strongly-typed settings (theme, shortcuts)                            |
+| App preferences    | Preferences System | Strongly-typed settings (theme, shortcuts, sidebar layout / visibility, …) |
 | Emergency recovery | Recovery System    | Crash recovery, backup before risky operations                        |
 | Relational data    | SQLite             | User data requiring queries, relationships                            |
 | External API data  | TanStack Query     | Remote data with caching (see [external-apis.md](./external-apis.md)) |

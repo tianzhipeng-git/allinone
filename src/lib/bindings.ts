@@ -265,7 +265,11 @@ quick_pane_shortcut: string | null;
  * User's preferred language (e.g., "en", "es", "de")
  * If None, uses system locale detection
  */
-language: string | null }
+language: string | null; left_sidebar_visible?: boolean; right_sidebar_visible?: boolean; 
+/**
+ * Preferred width as a percentage (main window horizontal split).
+ */
+left_sidebar_size?: number; right_sidebar_size?: number }
 export type GtdDocument = { id: number; group_id: number; title: string; path: string; markdown_heading: string | null; created_at: string; updated_at: string }
 export type GtdGroup = { id: number; parent_id: number | null; name: string; sort_order: number }
 export type GtdImportPreview = { path: string; is_directory: boolean; files: string[] }

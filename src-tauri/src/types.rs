@@ -22,6 +22,14 @@ pub static FILENAME_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 // Preferences
 // ============================================================================
 
+fn default_bool_true() -> bool {
+    true
+}
+
+fn default_sidebar_width_pct() -> f64 {
+    20.0
+}
+
 /// Application preferences that persist to disk.
 /// Only contains settings that should be saved between sessions.
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -33,6 +41,39 @@ pub struct AppPreferences {
     /// User's preferred language (e.g., "en", "es", "de")
     /// If None, uses system locale detection
     pub language: Option<String>,
+    #[serde(default = "default_bool_true")]
+    pub left_sidebar_visible: bool,
+    #[serde(default = "default_bool_true")]
+    pub right_sidebar_visible: bool,
+    /// Preferred width as a percentage (main window horizontal split).
+    #[serde(default = "default_sidebar_width_pct")]
+    pub left_sidebar_size: f64,
+    #[serde(default = "default_sidebar_width_pct")]
+    pub right_sidebar_size: f64,
+}
+
+impl AppPreferences {
+    /// Clamp sidebar widths so each stays in [15, 40] and main content keeps at least 30%.
+    /// Matches frontend `MainWindow` `ResizablePanel` min/max.
+    pub fn normalize_sidebar_layout(&mut self) {
+        self.left_sidebar_size = self.left_sidebar_size.clamp(15.0, 40.0);
+        self.right_sidebar_size = self.right_sidebar_size.clamp(15.0, 40.0);
+        let mut main = 100.0 - self.left_sidebar_size - self.right_sidebar_size;
+        let mut iterations = 0;
+        while main < 30.0 && iterations < 8 {
+            let deficit = (30.0 - main) / 2.0;
+            self.left_sidebar_size -= deficit;
+            self.right_sidebar_size -= deficit;
+            self.left_sidebar_size = self.left_sidebar_size.clamp(15.0, 40.0);
+            self.right_sidebar_size = self.right_sidebar_size.clamp(15.0, 40.0);
+            main = 100.0 - self.left_sidebar_size - self.right_sidebar_size;
+            iterations += 1;
+        }
+        if main < 30.0 {
+            self.left_sidebar_size = default_sidebar_width_pct();
+            self.right_sidebar_size = default_sidebar_width_pct();
+        }
+    }
 }
 
 impl Default for AppPreferences {
@@ -41,6 +82,10 @@ impl Default for AppPreferences {
             theme: "system".to_string(),
             quick_pane_shortcut: None, // None means use default
             language: None,            // None means use system locale
+            left_sidebar_visible: true,
+            right_sidebar_visible: true,
+            left_sidebar_size: default_sidebar_width_pct(),
+            right_sidebar_size: default_sidebar_width_pct(),
         }
     }
 }
