@@ -58,6 +58,7 @@
 
   "modules.launcher": "Modules",
   "modules.gtd.title": "Global Todo",
+  "modules.strangeReminder.title": "Strange Reminder",
   "modules.gtd.sidebar.title": "Todo Files",
   "modules.gtd.sidebar.subtitle": "Groups and Markdown",
   "modules.gtd.sidebar.topLevelGroup": "Top level",
@@ -148,6 +149,9 @@
   "commandPalette.title": "Command Palette",
   "commandPalette.placeholder": "Type a command or search...",
   "commandPalette.noResults": "No results found.",
+
+  "quickPane.placeholder": "Search modules...",
+  "quickPane.noResults": "No results found.",
 
   "titlebar.default": "allinone",
   "titlebar.showLeftSidebar": "Show Left Sidebar",

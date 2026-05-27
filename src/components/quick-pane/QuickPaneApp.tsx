@@ -1,10 +1,38 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { emit, listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { useTranslation } from 'react-i18next'
+import '@/i18n'
 import { commands } from '@/lib/tauri-bindings'
 import { logger } from '@/lib/logger'
+import { fuzzyMatch } from '@/lib/fuzzy-search'
+import {
+  QUICK_PANE_SUBMIT_EVENT,
+  type QuickPaneSubmitPayload,
+} from '@/lib/quick-pane-events'
+import { modules } from '@/modules/registry'
+import type { AppModule, AppModuleQuickSearchItem } from '@/modules/types'
 
-/** Dismiss the quick pane window, logging any errors */
+type QuickPaneMode =
+  | { type: 'modules' }
+  | { type: 'module-search'; moduleId: string }
+
+type QuickPaneResult =
+  | {
+      type: 'module'
+      id: string
+      title: string
+      subtitle: string
+      module: AppModule
+    }
+  | {
+      type: 'module-item'
+      id: string
+      title: string
+      subtitle?: string
+      module: AppModule
+    }
+
 async function dismissQuickPane() {
   const result = await commands.dismissQuickPane()
   if (result.status === 'error') {
@@ -12,16 +40,6 @@ async function dismissQuickPane() {
   }
 }
 
-/**
- * QuickPaneApp - A minimal floating window for quick text entry.
- *
- * This component demonstrates the quick pane pattern:
- * - Single text input with submit on Enter
- * - Emits 'quick-pane-submit' event with the entered text
- * - Theme synced with main window via localStorage
- * - Hides window on submit or Escape
- */
-// Apply theme from localStorage to document
 function applyTheme() {
   const theme = localStorage.getItem('ui-theme') || 'system'
   const root = document.documentElement
@@ -39,11 +57,60 @@ function applyTheme() {
   }
 }
 
+function searchModules(query: string, t: (key: string) => string) {
+  return fuzzyMatch(modules, query, module => [
+    t(module.labelKey),
+    module.shortLabel,
+    module.id,
+    ...(module.aliases ?? []),
+  ])
+}
+
+function toModuleResult(module: AppModule, t: (key: string) => string) {
+  return {
+    type: 'module',
+    id: module.id,
+    title: t(module.labelKey),
+    subtitle: module.shortLabel,
+    module,
+  } satisfies QuickPaneResult
+}
+
+function toModuleItemResult(item: AppModuleQuickSearchItem, module: AppModule) {
+  return {
+    type: 'module-item',
+    id: item.id,
+    title: item.title,
+    subtitle: item.subtitle,
+    module,
+  } satisfies QuickPaneResult
+}
+
 export default function QuickPaneApp() {
+  const { t } = useTranslation()
   const [text, setText] = useState('')
+  const [mode, setMode] = useState<QuickPaneMode>({ type: 'modules' })
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [hasExplicitSelection, setHasExplicitSelection] = useState(false)
+  const [moduleItems, setModuleItems] = useState<AppModuleQuickSearchItem[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Apply theme on mount and listen for theme changes from main window
+  const activeModule =
+    mode.type === 'module-search'
+      ? modules.find(module => module.id === mode.moduleId)
+      : null
+
+  const results: QuickPaneResult[] =
+    mode.type === 'modules'
+      ? searchModules(text, t).map(module => toModuleResult(module, t))
+      : activeModule
+        ? moduleItems.map(item => toModuleItemResult(item, activeModule))
+        : []
+
+  const safeSelectedIndex =
+    results.length === 0 ? 0 : Math.min(selectedIndex, results.length - 1)
+  const selectedResult = results[safeSelectedIndex]
+
   useEffect(() => {
     applyTheme()
 
@@ -56,18 +123,14 @@ export default function QuickPaneApp() {
     }
   }, [])
 
-  // Focus input when window becomes visible, hide on blur
   useEffect(() => {
     const currentWindow = getCurrentWindow()
     const unlisten = currentWindow.onFocusChanged(
       async ({ payload: focused }) => {
         if (focused) {
-          // Re-apply theme in case it changed while hidden
           applyTheme()
           inputRef.current?.focus()
         } else {
-          // Hide window when it loses focus (dismiss on blur)
-          // Use dismiss command for consistent behavior (no animation)
           await dismissQuickPane()
         }
       }
@@ -78,11 +141,10 @@ export default function QuickPaneApp() {
     }
   }, [])
 
-  // Handle Escape key to dismiss
   useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault() // Prevent system "boop" sound
+    const handleKeyDown = async (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
         await dismissQuickPane()
       }
     }
@@ -91,36 +153,206 @@ export default function QuickPaneApp() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (text.trim()) {
-      // Emit the event for main window to handle
-      await emit('quick-pane-submit', { text: text.trim() })
-      setText('')
+  useEffect(() => {
+    if (mode.type !== 'module-search' || !activeModule?.quickSearch) {
+      return
     }
 
-    // Use dismiss command to avoid space switching on macOS
+    let isCurrent = true
+
+    activeModule.quickSearch
+      .search(text)
+      .then(items => {
+        if (isCurrent) {
+          setModuleItems(items)
+          setSelectedIndex(0)
+        }
+      })
+      .catch(error => {
+        logger.error('Quick pane module search failed', {
+          moduleId: activeModule.id,
+          error,
+        })
+        if (isCurrent) {
+          setModuleItems([])
+        }
+      })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [activeModule, mode, text])
+
+  const setSelection = (nextIndex: number) => {
+    if (results.length === 0) {
+      setSelectedIndex(0)
+      return
+    }
+
+    setHasExplicitSelection(true)
+    setSelectedIndex((nextIndex + results.length) % results.length)
+  }
+
+  const returnToModuleSearch = () => {
+    setMode({ type: 'modules' })
+    setText('')
+    setModuleItems([])
+    setSelectedIndex(0)
+    setHasExplicitSelection(false)
+  }
+
+  const handleTextChange = (value: string) => {
+    if (
+      mode.type === 'modules' &&
+      hasExplicitSelection &&
+      selectedResult?.type === 'module' &&
+      selectedResult.module.quickSearch &&
+      value.length > text.length
+    ) {
+      setMode({ type: 'module-search', moduleId: selectedResult.module.id })
+      setSelectedIndex(0)
+      setHasExplicitSelection(false)
+      setText(value.slice(text.length))
+      return
+    }
+
+    setText(value)
+  }
+
+  const emitAndShowMainWindow = async (payload: QuickPaneSubmitPayload) => {
+    await emit(QUICK_PANE_SUBMIT_EVENT, payload)
+    const result = await commands.showMainWindow()
+    if (result.status === 'error') {
+      logger.error('Failed to show main window', { error: result.error })
+    }
+  }
+
+  const submitResult = async (result: QuickPaneResult | undefined) => {
+    if (result?.type === 'module') {
+      await emitAndShowMainWindow({
+        type: 'open-module',
+        moduleId: result.module.id,
+      })
+      setText('')
+      setMode({ type: 'modules' })
+      await dismissQuickPane()
+      return
+    }
+
+    if (result?.type === 'module-item') {
+      await emitAndShowMainWindow({
+        type: 'module-item',
+        moduleId: result.module.id,
+        itemId: result.id,
+        query: text.trim(),
+      })
+      setText('')
+      setMode({ type: 'modules' })
+      await dismissQuickPane()
+      return
+    }
+
     await dismissQuickPane()
+  }
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    await submitResult(selectedResult)
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      mode.type === 'module-search' &&
+      text.length === 0 &&
+      (event.key === 'Backspace' || event.key === 'Delete')
+    ) {
+      event.preventDefault()
+      returnToModuleSearch()
+      return
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'Tab') {
+      event.preventDefault()
+      setSelection(safeSelectedIndex + 1)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setSelection(safeSelectedIndex - 1)
+    }
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex h-screen w-screen items-center rounded-[var(--app-corner-radius)] border border-border bg-background px-5 shadow-lg"
+      className="flex h-screen w-screen flex-col rounded-[var(--app-corner-radius)] border border-border bg-background shadow-lg"
     >
-      <input
-        ref={inputRef}
-        type="text"
-        value={text}
-        onChange={e => setText(e.target.value)}
-        placeholder="Enter text..."
-        className="w-full bg-transparent text-lg text-foreground placeholder:text-muted-foreground outline-none"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-      />
+      <div className="flex h-[70px] shrink-0 items-center px-5">
+        {activeModule && (
+          <div className="mr-3 rounded bg-accent px-2 py-1 text-xs font-medium text-accent-foreground">
+            {activeModule.shortLabel}
+          </div>
+        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={text}
+          onChange={event => handleTextChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={t('quickPane.placeholder')}
+          className="min-w-0 flex-1 bg-transparent text-lg text-foreground placeholder:text-muted-foreground outline-none"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+        />
+      </div>
+
+      <div className="min-h-0 flex-1 border-t">
+        {results.length > 0 ? (
+          <div className="py-1">
+            {results.map((result, index) => {
+              const Icon = result.module.icon
+              const isSelected = index === safeSelectedIndex
+
+              return (
+                <button
+                  key={`${result.type}:${result.id}`}
+                  type="button"
+                  className={
+                    'flex h-12 w-full items-center gap-3 px-4 text-start text-sm ' +
+                    (isSelected
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-foreground hover:bg-accent/60')
+                  }
+                  onMouseEnter={() => setSelectedIndex(index)}
+                  onClick={() => {
+                    setSelectedIndex(index)
+                    void submitResult(result)
+                  }}
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {result.title}
+                    </span>
+                    {result.subtitle && (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {result.subtitle}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex h-full items-center px-5 text-sm text-muted-foreground">
+            {t('quickPane.noResults')}
+          </div>
+        )}
+      </div>
     </form>
   )
 }

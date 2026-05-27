@@ -58,6 +58,7 @@
 
   "modules.launcher": "模块",
   "modules.gtd.title": "全局待办",
+  "modules.strangeReminder.title": "奇怪提醒",
   "modules.gtd.sidebar.title": "待办文件",
   "modules.gtd.sidebar.subtitle": "分组和 Markdown",
   "modules.gtd.sidebar.topLevelGroup": "顶层",
@@ -148,6 +149,9 @@
   "commandPalette.title": "命令面板",
   "commandPalette.placeholder": "输入命令或搜索...",
   "commandPalette.noResults": "未找到结果。",
+
+  "quickPane.placeholder": "搜索模块...",
+  "quickPane.noResults": "未找到结果。",
 
   "titlebar.default": "allinone",
   "titlebar.showLeftSidebar": "显示左侧边栏",

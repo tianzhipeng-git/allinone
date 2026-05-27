@@ -115,6 +115,17 @@ async dismissQuickPane() : Promise<Result<null, string>> {
 }
 },
 /**
+ * Shows and focuses the main application window.
+ */
+async showMainWindow() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("show_main_window") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Toggles the quick pane window visibility.
  */
 async toggleQuickPane() : Promise<Result<null, string>> {

@@ -38,6 +38,7 @@ vi.mock('@/lib/tauri-bindings', () => ({
     sendNativeNotification: vi
       .fn()
       .mockResolvedValue({ status: 'ok', data: null }),
+    showMainWindow: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
     saveEmergencyData: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
     loadEmergencyData: vi.fn().mockResolvedValue({ status: 'ok', data: null }),
     cleanupOldRecoveryFiles: vi

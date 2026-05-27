@@ -1,6 +1,6 @@
 # Quick Panes
 
-Quick panes are small floating windows that appear via global keyboard shortcut, even when the main application is not focused. This pattern is common for quick entry, command palettes, and similar quick-access features.
+Quick panes are small floating windows that appear via global keyboard shortcut, even when the main application is not focused. This pattern is common for quick search, command palettes, and similar quick-access features.
 
 ## Overview
 
@@ -8,7 +8,7 @@ The quick pane system demonstrates:
 
 - **Global shortcuts** - Trigger from any app with `Cmd+Shift+.` (macOS) or `Ctrl+Shift+.` (Windows/Linux)
 - **Multi-window architecture** - Separate React contexts for main window and pane
-- **Cross-window communication** - Tauri events for decoupled messaging
+- **Cross-window communication** - Tauri events for decoupled submissions
 - **Platform-specific behavior** - Native NSPanel on macOS for fullscreen overlay
 
 ## Architecture
@@ -54,12 +54,12 @@ Windows communicate via Tauri events (not shared state):
 
 ```typescript
 // Quick pane: emit event on submit
-await emit('quick-pane-submit', { text: text.trim() })
+await emit('quick-pane-submit', { type: 'open-module', moduleId: 'gtd' })
 
 // Main window: listen for events
 listen('quick-pane-submit', ({ payload }) => {
   // Handle the submission - update Zustand, call API, etc.
-  setLastQuickPaneEntry(payload.text)
+  setActiveModuleId(payload.moduleId)
 })
 ```
 
@@ -149,71 +149,48 @@ await commands.updateQuickPaneShortcut('CommandOrControl+Alt+Space')
 await commands.updateQuickPaneShortcut(null)
 ```
 
-### Customizing the Pane Content
+### Customizing Module Search
 
-Edit `src/components/quick-pane/QuickPaneApp.tsx`:
+Add `quickSearch` to a module definition:
 
 ```typescript
-export default function QuickPaneApp() {
-  const [text, setText] = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (text.trim()) {
-      // Emit your custom event
-      await emit('quick-pane-submit', {
-        action: 'create-task',  // Custom action type
-        payload: { text: text.trim() }
-      })
-      setText('')
-    }
-    await commands.dismissQuickPane()
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* Your custom UI */}
-    </form>
-  )
+export const notesModule: AppModule = {
+  id: 'notes',
+  labelKey: 'modules.notes.title',
+  shortLabel: 'Notes',
+  aliases: ['note', 'docs'],
+  // ...
+  quickSearch: {
+    search: async query => searchNotes(query),
+    submit: noteId => useNotesStore.getState().setSelectedNoteId(noteId),
+  },
 }
 ```
 
 ### Wiring to Different Actions
 
-In the main window, handle the event however you need:
+In the main window, the default listener handles Quick Pane submissions by
+switching the active module and delegating submitted module items back to the
+module's `quickSearch.submit`.
 
 ```typescript
-// Zustand (demonstrated)
-listen('quick-pane-submit', ({ payload }) => {
-  useUIStore.getState().setLastQuickPaneEntry(payload.text)
-})
-
-// TanStack Query mutation
-listen('quick-pane-submit', ({ payload }) => {
-  createTaskMutation.mutate({ title: payload.text })
-})
-
-// API call
-listen('quick-pane-submit', async ({ payload }) => {
-  await fetch('/api/tasks', {
-    method: 'POST',
-    body: JSON.stringify({ title: payload.text }),
-  })
-})
-
-// Tauri command
-listen('quick-pane-submit', async ({ payload }) => {
-  await commands.createTask(payload.text)
+listen('quick-pane-submit', event => {
+  useUIStore.getState().setActiveModuleId(event.payload.moduleId)
+  if (event.payload.type === 'module-item') {
+    getModuleById(event.payload.moduleId).quickSearch?.submit(
+      event.payload.itemId
+    )
+  }
 })
 ```
 
 ### Changing Window Size
 
-Update the constants in `src-tauri/src/lib.rs`:
+Update the constants in `src-tauri/src/commands/quick_pane.rs`:
 
 ```rust
 const QUICK_PANE_WIDTH: f64 = 500.0;
-const QUICK_PANE_HEIGHT: f64 = 72.0;
+const QUICK_PANE_HEIGHT: f64 = 360.0;
 ```
 
 Also update the window creation in `init_quick_pane_macos` and `init_quick_pane_standard`.

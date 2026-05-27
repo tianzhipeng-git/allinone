@@ -7,7 +7,6 @@ interface UIState {
   activeModuleId: string
   commandPaletteOpen: boolean
   preferencesOpen: boolean
-  lastQuickPaneEntry: string | null
 
   setActiveModuleId: (id: string) => void
   toggleLeftSidebar: () => void
@@ -18,7 +17,6 @@ interface UIState {
   setCommandPaletteOpen: (open: boolean) => void
   togglePreferences: () => void
   setPreferencesOpen: (open: boolean) => void
-  setLastQuickPaneEntry: (text: string) => void
   setSquareCorners: (enabled: boolean) => void
 }
 
@@ -30,7 +28,6 @@ export const useUIStore = create<UIState>()(
       activeModuleId: 'gtd',
       commandPaletteOpen: false,
       preferencesOpen: false,
-      lastQuickPaneEntry: null,
 
       setActiveModuleId: id =>
         set({ activeModuleId: id }, undefined, 'setActiveModuleId'),
@@ -82,9 +79,6 @@ export const useUIStore = create<UIState>()(
 
       setPreferencesOpen: open =>
         set({ preferencesOpen: open }, undefined, 'setPreferencesOpen'),
-
-      setLastQuickPaneEntry: text =>
-        set({ lastQuickPaneEntry: text }, undefined, 'setLastQuickPaneEntry'),
 
       setSquareCorners: (enabled: boolean) => {
         document.documentElement.classList.toggle('square-corners', enabled)

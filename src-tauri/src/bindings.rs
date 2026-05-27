@@ -14,6 +14,7 @@ pub fn generate_bindings() -> Builder<tauri::Wry> {
         recovery::cleanup_old_recovery_files,
         quick_pane::show_quick_pane,
         quick_pane::dismiss_quick_pane,
+        quick_pane::show_main_window,
         quick_pane::toggle_quick_pane,
         quick_pane::get_default_quick_pane_shortcut,
         quick_pane::update_quick_pane_shortcut,

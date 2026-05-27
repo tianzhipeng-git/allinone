@@ -17,7 +17,7 @@ const QUICK_PANE_LABEL: &str = "quick-pane";
 
 /// Quick pane window dimensions
 const QUICK_PANE_WIDTH: f64 = 500.0;
-const QUICK_PANE_HEIGHT: f64 = 72.0;
+const QUICK_PANE_HEIGHT: f64 = 360.0;
 
 /// Tracks the currently registered quick pane shortcut for selective unregistration.
 /// This allows us to unregister only our shortcut without affecting other shortcuts.
@@ -73,7 +73,10 @@ fn init_quick_pane_macos(app: &AppHandle) -> Result<(), String> {
     let panel = PanelBuilder::<_, QuickPanePanel>::new(app, QUICK_PANE_LABEL)
         .url(WebviewUrl::App("quick-pane.html".into()))
         .title("Quick Entry")
-        .size(Size::Logical(LogicalSize::new(500.0, 72.0)))
+        .size(Size::Logical(LogicalSize::new(
+            QUICK_PANE_WIDTH,
+            QUICK_PANE_HEIGHT,
+        )))
         .level(PanelLevel::Status) // Status level to appear above fullscreen apps
         .transparent(true)
         .has_shadow(true)
@@ -114,7 +117,7 @@ fn init_quick_pane_standard(app: &AppHandle) -> Result<(), String> {
         WebviewUrl::App("quick-pane.html".into()),
     )
     .title("Quick Entry")
-    .inner_size(500.0, 72.0)
+    .inner_size(QUICK_PANE_WIDTH, QUICK_PANE_HEIGHT)
     .always_on_top(true)
     .skip_taskbar(true)
     .decorations(false)
@@ -297,6 +300,23 @@ pub fn dismiss_quick_pane(app: AppHandle) -> Result<(), String> {
                 .map_err(|e| format!("Failed to hide window: {e}"))?;
             log::debug!("Quick pane window hidden");
         }
+    }
+
+    Ok(())
+}
+
+/// Shows and focuses the main application window.
+#[tauri::command]
+#[specta::specta]
+pub fn show_main_window(app: AppHandle) -> Result<(), String> {
+    #[cfg(desktop)]
+    {
+        crate::app_tray::show_main_window(&app);
+    }
+
+    #[cfg(not(desktop))]
+    {
+        let _ = app;
     }
 
     Ok(())

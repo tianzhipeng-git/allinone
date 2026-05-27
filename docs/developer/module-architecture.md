@@ -71,11 +71,13 @@ export interface AppModule {
   id: string
   labelKey: string
   shortLabel: string
+  aliases?: string[]
   icon: LucideIcon
   order: number
   component: React.LazyExoticComponent<React.ComponentType>
   rightSidebarComponent?: React.LazyExoticComponent<React.ComponentType>
   commands?: AppCommand[]
+  quickSearch?: AppModuleQuickSearch
   settingsComponent?: React.ComponentType
 }
 ```
@@ -179,6 +181,26 @@ export const todoCommands: AppCommand[] = [
 Command IDs must be namespaced by module ID (`todos.create`, `notes.open-today`). Labels and descriptions must use i18n keys.
 
 See [command-system.md](./command-system.md).
+
+## Quick Pane Search
+
+Modules can opt into Quick Pane deep search with `quickSearch`. The Quick Pane
+first searches registered modules by translated name, `shortLabel`, module ID,
+and optional `aliases`. After a user highlights a module with keyboard
+navigation and continues typing, the highlighted module's `quickSearch.search`
+handler returns module-owned results.
+
+```typescript
+export interface AppModuleQuickSearch {
+  search: (query: string) => Promise<AppModuleQuickSearchItem[]>
+  submit: (itemId: string) => void | Promise<void>
+}
+```
+
+The main window receives Quick Pane submissions, switches to the submitted
+module, then calls that module's `quickSearch.submit`. Keep submit handlers
+small and module-local: for example, the GTD module only selects the submitted
+document ID in its own store.
 
 ## Persistence
 
