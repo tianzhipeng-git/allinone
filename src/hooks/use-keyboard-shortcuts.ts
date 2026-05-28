@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useUIStore } from '@/store/ui-store'
+import { executeCommand } from '@/lib/commands/registry'
 import type { CommandContext } from '@/lib/commands/types'
 
 /**
@@ -7,6 +8,7 @@ import type { CommandContext } from '@/lib/commands/types'
  *
  * Currently handles:
  * - Cmd/Ctrl+, : Open preferences
+ * - Cmd/Ctrl+W : Close window to tray
  * - Cmd/Ctrl+1 : Toggle left sidebar
  * - Cmd/Ctrl+2 : Toggle right sidebar
  */
@@ -18,6 +20,11 @@ export function useKeyboardShortcuts(commandContext: CommandContext) {
           case ',': {
             e.preventDefault()
             commandContext.openPreferences()
+            break
+          }
+          case 'w': {
+            e.preventDefault()
+            void executeCommand('window-close', commandContext)
             break
           }
           case '1': {

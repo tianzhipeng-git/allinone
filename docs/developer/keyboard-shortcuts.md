@@ -8,6 +8,7 @@ Centralized keyboard shortcut management using native DOM event listeners.
 | -------------------- | ----- | ------------- | ---------------------------------------------- |
 | Open Preferences     | Cmd+, | Ctrl+,        | Opens settings dialog                          |
 | Command Palette      | Cmd+K | Ctrl+K        | Opens command search                           |
+| Close Window         | Cmd+W | Ctrl+W        | Hides the main window to the system tray       |
 | Save Active Module   | Cmd+S | Ctrl+S        | Saves the active module content when supported |
 | Toggle Left Sidebar  | Cmd+1 | Ctrl+1        | Show/hide left panel                           |
 | Toggle Right Sidebar | Cmd+2 | Ctrl+2        | Show/hide right panel                          |

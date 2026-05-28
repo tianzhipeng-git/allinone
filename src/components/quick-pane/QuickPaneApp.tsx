@@ -90,7 +90,7 @@ export default function QuickPaneApp() {
   const { t } = useTranslation()
   const [text, setText] = useState('')
   const [mode, setMode] = useState<QuickPaneMode>({ type: 'modules' })
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [hasExplicitSelection, setHasExplicitSelection] = useState(false)
   const [moduleItems, setModuleItems] = useState<AppModuleQuickSearchItem[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
@@ -108,8 +108,11 @@ export default function QuickPaneApp() {
         : []
 
   const safeSelectedIndex =
-    results.length === 0 ? 0 : Math.min(selectedIndex, results.length - 1)
-  const selectedResult = results[safeSelectedIndex]
+    selectedIndex === null || results.length === 0
+      ? null
+      : Math.min(selectedIndex, results.length - 1)
+  const selectedResult =
+    safeSelectedIndex === null ? undefined : results[safeSelectedIndex]
 
   useEffect(() => {
     applyTheme()
@@ -165,7 +168,7 @@ export default function QuickPaneApp() {
       .then(items => {
         if (isCurrent) {
           setModuleItems(items)
-          setSelectedIndex(0)
+          setSelectedIndex(null)
         }
       })
       .catch(error => {
@@ -185,7 +188,7 @@ export default function QuickPaneApp() {
 
   const setSelection = (nextIndex: number) => {
     if (results.length === 0) {
-      setSelectedIndex(0)
+      setSelectedIndex(null)
       return
     }
 
@@ -197,7 +200,7 @@ export default function QuickPaneApp() {
     setMode({ type: 'modules' })
     setText('')
     setModuleItems([])
-    setSelectedIndex(0)
+    setSelectedIndex(null)
     setHasExplicitSelection(false)
   }
 
@@ -210,7 +213,7 @@ export default function QuickPaneApp() {
       value.length > text.length
     ) {
       setMode({ type: 'module-search', moduleId: selectedResult.module.id })
-      setSelectedIndex(0)
+      setSelectedIndex(null)
       setHasExplicitSelection(false)
       setText(value.slice(text.length))
       return
@@ -273,13 +276,15 @@ export default function QuickPaneApp() {
 
     if (event.key === 'ArrowDown' || event.key === 'Tab') {
       event.preventDefault()
-      setSelection(safeSelectedIndex + 1)
+      setSelection(safeSelectedIndex === null ? 0 : safeSelectedIndex + 1)
       return
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault()
-      setSelection(safeSelectedIndex - 1)
+      setSelection(
+        safeSelectedIndex === null ? results.length - 1 : safeSelectedIndex - 1
+      )
     }
   }
 
@@ -314,7 +319,8 @@ export default function QuickPaneApp() {
           <div className="py-1">
             {results.map((result, index) => {
               const Icon = result.module.icon
-              const isSelected = index === safeSelectedIndex
+              const isSelected =
+                safeSelectedIndex !== null && index === safeSelectedIndex
 
               return (
                 <button
