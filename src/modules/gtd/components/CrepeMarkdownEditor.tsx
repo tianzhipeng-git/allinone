@@ -18,6 +18,7 @@ export function CrepeMarkdownEditor({
   onChange,
 }: CrepeMarkdownEditorProps) {
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const initialValueRef = useRef(normalizeMarkdownHeadingDepth(value))
   const onChangeRef = useRef(onChange)
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export function CrepeMarkdownEditor({
 
     const crepe = new Crepe({
       root: rootRef.current,
-      defaultValue: normalizeMarkdownHeadingDepth(value),
+      defaultValue: initialValueRef.current,
       features: {
         [Crepe.Feature.Placeholder]: true,
       },
@@ -55,7 +56,7 @@ export function CrepeMarkdownEditor({
     return () => {
       void crepe.destroy()
     }
-  }, [placeholder, value])
+  }, [placeholder])
 
   return <div ref={rootRef} className="gtd-crepe-editor h-full" />
 }
