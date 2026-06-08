@@ -27,12 +27,7 @@ import {
   useLogEntryNote,
 } from './LogEntryControls'
 import { LogTimestamps } from './LogTimestamps'
-import {
-  formatDateTime,
-  formatFullDateTime,
-  frequencyKey,
-  statusKey,
-} from '../format'
+import { formatFullDateTime, frequencyKey, statusKey } from '../format'
 
 interface RemDetailDialogProps {
   open: boolean

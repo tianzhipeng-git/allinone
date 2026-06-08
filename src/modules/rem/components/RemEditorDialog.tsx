@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type React from 'react'
-import { Bell, Clock, Info, Link } from 'lucide-react'
+import { Bell, CircleHelp, Clock, Info, Link, Plus, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -16,13 +16,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { formatSchedulePreview } from '../format'
 import {
   buildCronExpression,
   createDefaultSchedule,
   updateCronExpression,
 } from '../schedule'
-import type { RemReminder, RemReminderDraft, RemScheduleMode } from '../types'
+import {
+  defaultWebhookBodyTemplate,
+  webhookTemplateVariables,
+  type RemReminder,
+  type RemReminderDraft,
+  type RemScheduleMode,
+  type RemWebhookHeader,
+} from '../types'
 
 interface RemEditorDialogProps {
   open: boolean
@@ -209,7 +221,14 @@ export function RemEditorDialog({
                   }
                 />
               </div>
-              <Field label={t('modules.rem.fields.webhook')}>
+              <Field
+                label={t('modules.rem.fields.webhook')}
+                hint={
+                  <FieldHint label={t('modules.rem.tooltips.webhook.ariaLabel')}>
+                    <WebhookHintContent />
+                  </FieldHint>
+                }
+              >
                 <div className="relative">
                   <Link className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -228,6 +247,89 @@ export function RemEditorDialog({
                   />
                 </div>
               </Field>
+              {draft.notifications.webhookUrl.trim() && (
+                <>
+                  <Field label={t('modules.rem.fields.webhookBody')}>
+                    <Textarea
+                      className="min-h-32 font-mono text-xs"
+                      value={draft.notifications.webhookBodyTemplate}
+                      placeholder={defaultWebhookBodyTemplate}
+                      onChange={event =>
+                        setDraft({
+                          ...draft,
+                          notifications: {
+                            ...draft.notifications,
+                            webhookBodyTemplate: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </Field>
+                  <div className="grid gap-2">
+                    <Label>{t('modules.rem.fields.webhookHeaders')}</Label>
+                    <div className="grid gap-2">
+                      {draft.notifications.webhookHeaders.map((header, index) => (
+                        <div
+                          key={`${index}-${header.name}`}
+                          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+                        >
+                          <Input
+                            value={header.name}
+                            placeholder={t(
+                              'modules.rem.placeholders.webhookHeaderName'
+                            )}
+                            onChange={event =>
+                              updateWebhookHeader(
+                                setDraft,
+                                draft,
+                                index,
+                                'name',
+                                event.target.value
+                              )
+                            }
+                          />
+                          <Input
+                            value={header.value}
+                            placeholder={t(
+                              'modules.rem.placeholders.webhookHeaderValue'
+                            )}
+                            onChange={event =>
+                              updateWebhookHeader(
+                                setDraft,
+                                draft,
+                                index,
+                                'value',
+                                event.target.value
+                              )
+                            }
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t('modules.rem.actions.removeWebhookHeader')}
+                            onClick={() =>
+                              removeWebhookHeader(setDraft, draft, index)
+                            }
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => addWebhookHeader(setDraft, draft)}
+                    >
+                      <Plus className="size-4" />
+                      {t('modules.rem.actions.addWebhookHeader')}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </EditorSection>
         </div>
@@ -417,15 +519,75 @@ function EditorSection({
 
 function Field({
   label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center gap-1.5">
+        <Label>{label}</Label>
+        {hint}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function FieldHint({
+  label,
   children,
 }: {
   label: string
   children: React.ReactNode
 }) {
   return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex text-muted-foreground transition-colors hover:text-foreground"
+          aria-label={label}
+        >
+          <CircleHelp className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        sideOffset={4}
+        className="max-w-xs text-start whitespace-normal"
+      >
+        {children}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function WebhookHintContent() {
+  const { t } = useTranslation()
+
+  return (
     <div className="grid gap-2">
-      <Label>{label}</Label>
-      {children}
+      <p>{t('modules.rem.tooltips.webhook.intro')}</p>
+      <p>{t('modules.rem.tooltips.webhook.body')}</p>
+      <div>
+        <p className="font-medium">{t('modules.rem.tooltips.webhook.variables')}</p>
+        <ul className="mt-1 space-y-0.5">
+          {webhookTemplateVariables.map(variable => (
+            <li key={variable} className="font-mono text-[11px] leading-relaxed">
+              {`{{${variable}}}`}
+              <span className="font-sans">
+                {' — '}
+                {t(`modules.rem.tooltips.webhook.variable.${variable}`)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p>{t('modules.rem.tooltips.webhook.headers')}</p>
     </div>
   )
 }
@@ -457,6 +619,8 @@ function reminderToDraft(
     notifications: {
       system: true,
       webhookUrl: '',
+      webhookBodyTemplate: '',
+      webhookHeaders: [],
     },
   }
 }
@@ -497,8 +661,67 @@ function normalizeDraft(draft: RemReminderDraft): RemReminderDraft {
     notifications: {
       ...draft.notifications,
       webhookUrl: draft.notifications.webhookUrl.trim(),
+      webhookBodyTemplate: draft.notifications.webhookBodyTemplate.trim(),
+      webhookHeaders: draft.notifications.webhookHeaders
+        .filter(header => header.name.trim())
+        .map(header => ({
+          name: header.name.trim(),
+          value: header.value,
+        })),
     },
   }
+}
+
+function updateWebhookHeader(
+  setDraft: (draft: RemReminderDraft) => void,
+  draft: RemReminderDraft,
+  index: number,
+  field: keyof RemWebhookHeader,
+  value: string
+) {
+  const webhookHeaders = draft.notifications.webhookHeaders.map((header, headerIndex) =>
+    headerIndex === index ? { ...header, [field]: value } : header
+  )
+
+  setDraft({
+    ...draft,
+    notifications: {
+      ...draft.notifications,
+      webhookHeaders,
+    },
+  })
+}
+
+function addWebhookHeader(
+  setDraft: (draft: RemReminderDraft) => void,
+  draft: RemReminderDraft
+) {
+  setDraft({
+    ...draft,
+    notifications: {
+      ...draft.notifications,
+      webhookHeaders: [
+        ...draft.notifications.webhookHeaders,
+        { name: '', value: '' },
+      ],
+    },
+  })
+}
+
+function removeWebhookHeader(
+  setDraft: (draft: RemReminderDraft) => void,
+  draft: RemReminderDraft,
+  index: number
+) {
+  setDraft({
+    ...draft,
+    notifications: {
+      ...draft.notifications,
+      webhookHeaders: draft.notifications.webhookHeaders.filter(
+        (_, headerIndex) => headerIndex !== index
+      ),
+    },
+  })
 }
 
 function uniqueTags(tags: string[], activeTag: string): string[] {

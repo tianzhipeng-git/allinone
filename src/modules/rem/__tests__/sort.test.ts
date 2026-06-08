@@ -24,7 +24,12 @@ function createReminder(overrides: Partial<RemReminder> = {}): RemReminder {
     },
     scheduleText: '每天 09:00',
     frequency: 'week',
-    notifications: { system: true, webhookUrl: '' },
+    notifications: {
+      system: true,
+      webhookUrl: '',
+      webhookBodyTemplate: '',
+      webhookHeaders: [],
+    },
     ...overrides,
   }
 }

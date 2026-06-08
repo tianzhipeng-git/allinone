@@ -42,10 +42,37 @@ export interface RemScheduleConfig {
   cronExpression: string
 }
 
+export interface RemWebhookHeader {
+  name: string
+  value: string
+}
+
 export interface RemNotificationChannels {
   system: boolean
   webhookUrl: string
+  webhookBodyTemplate: string
+  webhookHeaders: RemWebhookHeader[]
 }
+
+export const defaultWebhookBodyTemplate = `{
+  "module": "rem",
+  "reminderId": "{{reminderId}}",
+  "title": "{{title}}",
+  "description": "{{description}}",
+  "tag": "{{tag}}",
+  "triggeredAt": "{{triggeredAt}}",
+  "nextTriggerAt": "{{nextTriggerAt}}"
+}`
+
+export const webhookTemplateVariables = [
+  'module',
+  'reminderId',
+  'title',
+  'description',
+  'tag',
+  'triggeredAt',
+  'nextTriggerAt',
+] as const
 
 export interface RemReminder {
   id: string

@@ -8,6 +8,7 @@ use crate::commands::notifications::send_native_notification_blocking;
 
 use super::storage;
 use super::types::{RemLogEntry, RemReminder};
+use super::webhook::{build_request_headers, render_webhook_body};
 
 static SCHEDULER_STARTED: AtomicBool = AtomicBool::new(false);
 
@@ -101,23 +102,30 @@ fn send_system_notification(
 }
 
 fn send_webhook(reminder: &RemReminder, triggered_at: &str) -> Result<(), String> {
-    let payload = serde_json::json!({
-        "module": "rem",
-        "reminderId": reminder.id,
-        "title": reminder.title,
-        "description": reminder.description,
-        "tag": reminder.tag,
-        "triggeredAt": triggered_at,
-        "nextTriggerAt": reminder.next_trigger_at,
-    });
-
-    reqwest::blocking::Client::new()
+    let body = render_webhook_body(reminder, triggered_at);
+    let mut request = reqwest::blocking::Client::new()
         .post(reminder.notifications.webhook_url.trim())
-        .json(&payload)
-        .send()
-        .map_err(|e| format!("Failed to send REM webhook: {e}"))?
-        .error_for_status()
-        .map_err(|e| format!("REM webhook returned an error: {e}"))?;
+        .body(body);
 
-    Ok(())
+    for (name, value) in build_request_headers(&reminder.notifications) {
+        request = request.header(name, value);
+    }
+
+    let response = request
+        .send()
+        .map_err(|e| format!("Failed to send REM webhook: {e}"))?;
+
+    if response.status().is_success() {
+        return Ok(());
+    }
+
+    let status = response.status();
+    let response_body = response
+        .text()
+        .unwrap_or_else(|e| format!("<failed to read response body: {e}>"));
+
+    Err(format!(
+        "REM webhook returned an error: {status} for url ({}): {response_body}",
+        reminder.notifications.webhook_url.trim()
+    ))
 }

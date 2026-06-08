@@ -146,6 +146,11 @@ function mapBackendReminder(
     notifications: {
       system: reminder.notifications.system,
       webhookUrl: reminder.notifications.webhook_url,
+      webhookBodyTemplate: reminder.notifications.webhook_body_template,
+      webhookHeaders: reminder.notifications.webhook_headers.map(header => ({
+        name: header.name,
+        value: header.value,
+      })),
     },
   }
 }
@@ -190,6 +195,13 @@ function toBackendDraft(draft: RemReminderDraft): BackendRemReminderDraft {
     notifications: {
       system: draft.notifications.system,
       webhook_url: draft.notifications.webhookUrl,
+      webhook_body_template: draft.notifications.webhookBodyTemplate,
+      webhook_headers: draft.notifications.webhookHeaders
+        .filter(header => header.name.trim())
+        .map(header => ({
+          name: header.name.trim(),
+          value: header.value,
+        })),
     },
   }
 }

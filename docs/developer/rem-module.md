@@ -22,7 +22,7 @@ It includes:
 - Background scheduler started during Tauri setup
 - Native system notification dispatch
 - Native notification actions for confirming or ignoring pending trigger logs
-- Webhook POST delivery for reminders with a configured URL
+- Webhook POST delivery with configurable URL, body template, and custom headers
 
 ## Module Boundary
 
@@ -89,3 +89,28 @@ The backend scheduler scans due reminders every 30 seconds. For each due
 reminder it creates a pending log row, sends the enabled channels, advances the
 next trigger time, and emits `rem://state-changed` so the frontend refreshes the
 TanStack Query cache.
+
+## Webhook Delivery
+
+Webhook configuration lives on each reminder's notification channels:
+
+- `webhook_url`: POST target
+- `webhook_body_template`: optional request body template
+- `webhook_headers`: optional custom headers (for example `Authorization`)
+
+When the body template is empty, the scheduler sends the built-in default JSON
+payload. Custom templates use `{{variable}}` placeholders that are replaced at
+send time. Values embedded in JSON strings are escaped automatically.
+
+Available template variables:
+
+- `module`
+- `reminderId`
+- `title`
+- `description`
+- `tag`
+- `triggeredAt`
+- `nextTriggerAt`
+
+If no `Content-Type` header is configured, the scheduler defaults to
+`application/json`.

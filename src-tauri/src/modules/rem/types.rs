@@ -39,9 +39,17 @@ pub struct RemScheduleConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct RemWebhookHeader {
+    pub name: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct RemNotificationChannels {
     pub system: bool,
     pub webhook_url: String,
+    pub webhook_body_template: String,
+    pub webhook_headers: Vec<RemWebhookHeader>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]

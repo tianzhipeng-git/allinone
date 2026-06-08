@@ -7,7 +7,7 @@ use super::schedule::{
 };
 use super::types::{
     RemCadence, RemLogEntry, RemLogStatus, RemNotificationChannels, RemReminder, RemReminderDraft,
-    RemScheduleConfig, RemScheduleMode, RemState,
+    RemScheduleConfig, RemScheduleMode, RemState, RemWebhookHeader,
 };
 
 pub fn connect(app: &AppHandle) -> Result<Connection, String> {
@@ -44,6 +44,8 @@ fn migrate(conn: &Connection) -> Result<(), String> {
             cron_expression TEXT NOT NULL,
             notification_system INTEGER NOT NULL DEFAULT 1,
             webhook_url TEXT NOT NULL DEFAULT '',
+            webhook_body_template TEXT NOT NULL DEFAULT '',
+            webhook_headers TEXT NOT NULL DEFAULT '[]',
             next_trigger_at TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -72,7 +74,41 @@ fn migrate(conn: &Connection) -> Result<(), String> {
             ON rem_logs(reminder_id, triggered_at);
         ",
     )
-    .map_err(|e| format!("Failed to migrate REM database: {e}"))
+    .map_err(|e| format!("Failed to migrate REM database: {e}"))?;
+
+    ensure_column(conn, "rem_reminders", "webhook_body_template", "TEXT NOT NULL DEFAULT ''")?;
+    ensure_column(conn, "rem_reminders", "webhook_headers", "TEXT NOT NULL DEFAULT '[]'")?;
+
+    Ok(())
+}
+
+fn ensure_column(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    definition: &str,
+) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare(&format!("PRAGMA table_info({table})"))
+        .map_err(|e| format!("Failed to inspect REM table {table}: {e}"))?;
+
+    let columns = stmt
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|e| format!("Failed to read REM table columns for {table}: {e}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to collect REM table columns for {table}: {e}"))?;
+
+    if columns.iter().any(|name| name == column) {
+        return Ok(());
+    }
+
+    conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"),
+        [],
+    )
+    .map_err(|e| format!("Failed to add REM column {column} to {table}: {e}"))?;
+
+    Ok(())
 }
 
 pub fn get_state(conn: &Connection) -> Result<RemState, String> {
@@ -89,6 +125,7 @@ pub fn list_reminders(conn: &Connection) -> Result<Vec<RemReminder>, String> {
             SELECT id, title, description, tag, enabled, schedule_mode, cadence,
                    time, weekdays, month_day, month, interval_hours,
                    cron_expression, notification_system, webhook_url,
+                   webhook_body_template, webhook_headers,
                    next_trigger_at, created_at, updated_at
             FROM rem_reminders
             ORDER BY enabled DESC, next_trigger_at ASC, title COLLATE NOCASE
@@ -139,9 +176,10 @@ pub fn create_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
         INSERT INTO rem_reminders (
             title, description, tag, enabled, schedule_mode, cadence, time,
             weekdays, month_day, month, interval_hours, cron_expression,
-            notification_system, webhook_url, next_trigger_at, created_at, updated_at
+            notification_system, webhook_url, webhook_body_template,
+            webhook_headers, next_trigger_at, created_at, updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
         ",
         params![
             draft.title.trim(),
@@ -158,6 +196,8 @@ pub fn create_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             build_cron_expression(&schedule),
             bool_to_i32(draft.notifications.system),
             draft.notifications.webhook_url.trim(),
+            draft.notifications.webhook_body_template.trim(),
+            webhook_headers_to_json(&draft.notifications.webhook_headers)?,
             next_trigger_at,
             now,
             now,
@@ -198,9 +238,11 @@ pub fn update_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             cron_expression = ?12,
             notification_system = ?13,
             webhook_url = ?14,
-            next_trigger_at = ?15,
-            updated_at = ?16
-        WHERE id = ?17
+            webhook_body_template = ?15,
+            webhook_headers = ?16,
+            next_trigger_at = ?17,
+            updated_at = ?18
+        WHERE id = ?19
         ",
         params![
             draft.title.trim(),
@@ -217,6 +259,8 @@ pub fn update_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             build_cron_expression(&schedule),
             bool_to_i32(draft.notifications.system),
             draft.notifications.webhook_url.trim(),
+            draft.notifications.webhook_body_template.trim(),
+            webhook_headers_to_json(&draft.notifications.webhook_headers)?,
             next_trigger_at,
             now_iso(),
             id,
@@ -293,6 +337,7 @@ pub fn due_reminders(conn: &Connection, now: DateTime<Utc>) -> Result<Vec<RemRem
             SELECT id, title, description, tag, enabled, schedule_mode, cadence,
                    time, weekdays, month_day, month, interval_hours,
                    cron_expression, notification_system, webhook_url,
+                   webhook_body_template, webhook_headers,
                    next_trigger_at, created_at, updated_at
             FROM rem_reminders
             WHERE enabled = 1
@@ -377,6 +422,7 @@ fn get_reminder(conn: &Connection, id: i64) -> Result<RemReminder, String> {
         SELECT id, title, description, tag, enabled, schedule_mode, cadence,
                time, weekdays, month_day, month, interval_hours,
                cron_expression, notification_system, webhook_url,
+               webhook_body_template, webhook_headers,
                next_trigger_at, created_at, updated_at
         FROM rem_reminders
         WHERE id = ?1
@@ -423,14 +469,16 @@ fn map_reminder(row: &Row<'_>) -> rusqlite::Result<RemReminder> {
         description: row.get(2)?,
         tag: row.get(3)?,
         enabled: row.get::<_, i32>(4)? == 1,
-        created_at: row.get(16)?,
-        updated_at: row.get(17)?,
-        next_trigger_at: row.get(15)?,
         schedule,
         notifications: RemNotificationChannels {
             system: row.get::<_, i32>(13)? == 1,
             webhook_url: row.get(14)?,
+            webhook_body_template: row.get(15)?,
+            webhook_headers: webhook_headers_from_json(&row.get::<_, String>(16)?)?,
         },
+        next_trigger_at: row.get(17)?,
+        created_at: row.get(18)?,
+        updated_at: row.get(19)?,
     })
 }
 
@@ -462,6 +510,17 @@ fn validate_draft(draft: &RemReminderDraft) -> Result<(), String> {
         && !draft.notifications.webhook_url.starts_with("https://")
     {
         return Err("Webhook URL must start with http:// or https://".to_string());
+    }
+
+    for header in &draft.notifications.webhook_headers {
+        let name = header.name.trim();
+        if name.is_empty() {
+            continue;
+        }
+
+        if name.contains('\n') || header.value.contains('\n') {
+            return Err("Webhook header names and values cannot contain newlines".to_string());
+        }
     }
 
     get_next_trigger_at(&draft.schedule, Local::now()).map(|_| ())
@@ -559,6 +618,30 @@ fn weekdays_from_json(value: &str) -> rusqlite::Result<Vec<i32>> {
 fn channels_from_json(value: &str) -> rusqlite::Result<Vec<String>> {
     serde_json::from_str(value).map_err(|error| {
         rusqlite::Error::FromSqlConversionFailure(8, Type::Text, Box::new(error))
+    })
+}
+
+fn webhook_headers_to_json(value: &[RemWebhookHeader]) -> Result<String, String> {
+    let headers = value
+        .iter()
+        .filter(|header| !header.name.trim().is_empty())
+        .map(|header| RemWebhookHeader {
+            name: header.name.trim().to_string(),
+            value: header.value.clone(),
+        })
+        .collect::<Vec<_>>();
+
+    serde_json::to_string(&headers)
+        .map_err(|e| format!("Failed to encode REM webhook headers: {e}"))
+}
+
+fn webhook_headers_from_json(value: &str) -> rusqlite::Result<Vec<RemWebhookHeader>> {
+    if value.trim().is_empty() {
+        return Ok(vec![]);
+    }
+
+    serde_json::from_str(value).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(16, Type::Text, Box::new(error))
     })
 }
 
