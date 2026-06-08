@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type React from 'react'
-import type { TFunction } from 'i18next'
 import { Bell, Clock, Info, Link } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -17,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { formatSchedulePreview } from '../format'
 import {
   buildCronExpression,
   createDefaultSchedule,
@@ -50,7 +50,7 @@ export function RemEditorDialog({
     return null
   }
 
-  const schedulePreview = buildSchedulePreview(draft, t)
+  const schedulePreview = formatSchedulePreview(draft.schedule, t)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -174,13 +174,20 @@ export function RemEditorDialog({
               )}
 
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {draft.schedule.mode === 'cron'
-                    ? buildCronExpression(draft.schedule)
-                    : schedulePreview}
-                </span>
-                <span className="mx-2">→</span>
-                {schedulePreview}
+                {draft.schedule.mode === 'cron' &&
+                draft.schedule.cadence !== 'custom' ? (
+                  <>
+                    <span className="font-medium text-foreground">
+                      {buildCronExpression(draft.schedule)}
+                    </span>
+                    <span className="mx-2">→</span>
+                    {schedulePreview}
+                  </>
+                ) : (
+                  <span className="font-medium text-foreground">
+                    {schedulePreview}
+                  </span>
+                )}
               </div>
             </div>
           </EditorSection>
@@ -230,7 +237,13 @@ export function RemEditorDialog({
             {t('common.cancel')}
           </Button>
           <Button
-            disabled={!draft.title.trim() || !draft.tag.trim()}
+            disabled={
+              !draft.title.trim() ||
+              !draft.tag.trim() ||
+              (draft.schedule.mode === 'cron' &&
+                draft.schedule.cadence === 'custom' &&
+                !draft.schedule.cronExpression.trim())
+            }
             onClick={() => onSave(normalizeDraft(draft))}
           >
             {reminder
@@ -254,8 +267,10 @@ function CronFields({
 
   return (
     <div className="grid gap-3">
-      <div className="grid gap-2 md:grid-cols-4">
-        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map(cadence => (
+      <div className="grid gap-2 md:grid-cols-5">
+        {(
+          ['daily', 'weekly', 'monthly', 'yearly', 'custom'] as const
+        ).map(cadence => (
           <Button
             key={cadence}
             type="button"
@@ -273,6 +288,25 @@ function CronFields({
           </Button>
         ))}
       </div>
+      {draft.schedule.cadence === 'custom' ? (
+        <Field label={t('modules.rem.fields.cronExpression')}>
+          <Input
+            value={draft.schedule.cronExpression}
+            placeholder={t('modules.rem.placeholders.cronExpression')}
+            className="font-mono"
+            onChange={event =>
+              setDraft({
+                ...draft,
+                schedule: {
+                  ...draft.schedule,
+                  cronExpression: event.target.value,
+                },
+              })
+            }
+          />
+        </Field>
+      ) : (
+        <>
       <Field label={t('modules.rem.fields.time')}>
         <Input
           type="time"
@@ -355,6 +389,8 @@ function CronFields({
           />
         </Field>
       )}
+        </>
+      )}
     </div>
   )
 }
@@ -399,13 +435,15 @@ function reminderToDraft(
   fallbackTag: string
 ): RemReminderDraft {
   if (reminder) {
+    const schedule = resolveScheduleForEdit(reminder.schedule)
+
     return {
       id: reminder.id,
       title: reminder.title,
       description: reminder.description,
       tag: reminder.tag,
       enabled: reminder.enabled,
-      schedule: reminder.schedule,
+      schedule,
       notifications: reminder.notifications,
     }
   }
@@ -423,13 +461,39 @@ function reminderToDraft(
   }
 }
 
+function resolveScheduleForEdit(
+  schedule: RemReminderDraft['schedule']
+): RemReminderDraft['schedule'] {
+  if (schedule.mode !== 'cron' || schedule.cadence === 'custom') {
+    return schedule
+  }
+
+  const builtExpression = buildCronExpression(schedule)
+  if (schedule.cronExpression.trim() === builtExpression) {
+    return schedule
+  }
+
+  return {
+    ...schedule,
+    cadence: 'custom',
+  }
+}
+
 function normalizeDraft(draft: RemReminderDraft): RemReminderDraft {
+  const schedule =
+    draft.schedule.cadence === 'custom'
+      ? {
+          ...draft.schedule,
+          cronExpression: draft.schedule.cronExpression.trim(),
+        }
+      : updateCronExpression(draft.schedule)
+
   return {
     ...draft,
     title: draft.title.trim(),
     description: draft.description.trim(),
     tag: draft.tag.trim(),
-    schedule: updateCronExpression(draft.schedule),
+    schedule,
     notifications: {
       ...draft.notifications,
       webhookUrl: draft.notifications.webhookUrl.trim(),
@@ -450,38 +514,3 @@ function toggleWeekday(weekdaysValue: number[], day: number): number[] {
   return [...weekdaysValue, day].sort((left, right) => left - right)
 }
 
-function buildSchedulePreview(draft: RemReminderDraft, t: TFunction): string {
-  const schedule = draft.schedule
-
-  if (schedule.mode === 'interval') {
-    return t('modules.rem.preview.interval', {
-      count: Math.max(schedule.intervalHours, 1),
-    })
-  }
-
-  if (schedule.cadence === 'weekly') {
-    return t('modules.rem.preview.weekly', {
-      days: schedule.weekdays
-        .map(day => t(`modules.rem.weekday.${day}`))
-        .join(', '),
-      time: schedule.time,
-    })
-  }
-
-  if (schedule.cadence === 'monthly') {
-    return t('modules.rem.preview.monthly', {
-      day: schedule.monthDay,
-      time: schedule.time,
-    })
-  }
-
-  if (schedule.cadence === 'yearly') {
-    return t('modules.rem.preview.yearly', {
-      month: schedule.month,
-      day: schedule.monthDay,
-      time: schedule.time,
-    })
-  }
-
-  return t('modules.rem.preview.daily', { time: schedule.time })
-}

@@ -17,7 +17,14 @@ import {
   useUpdateRemReminder,
 } from './services'
 import { useRemUiStore } from './store'
-import type { RemLogStatus, RemReminder, RemReminderDraft } from './types'
+import type {
+  RemEnabledFilter,
+  RemLogStatus,
+  RemReminder,
+  RemReminderDraft,
+  RemReminderSort,
+} from './types'
+import { defaultRemEnabledFilter, defaultRemReminderSort } from './types'
 
 export function RemApp() {
   const { t } = useTranslation()
@@ -32,6 +39,10 @@ export function RemApp() {
   const updateLogStatusMutation = useUpdateRemLogStatus()
   const updateLogNoteMutation = useUpdateRemLogNote()
   const [selectedTag, setSelectedTag] = useState('all')
+  const [reminderSort, setReminderSort] =
+    useState<RemReminderSort>(defaultRemReminderSort)
+  const [enabledFilter, setEnabledFilter] =
+    useState<RemEnabledFilter>(defaultRemEnabledFilter)
   const [reminderSearch, setReminderSearch] = useState('')
   const [logSearch, setLogSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<RemLogStatus | 'all'>('all')
@@ -109,8 +120,12 @@ export function RemApp() {
         <RemReminderBoard
           reminders={reminders}
           selectedTag={selectedTag}
+          enabledFilter={enabledFilter}
+          reminderSort={reminderSort}
           searchQuery={reminderSearch}
           onSelectedTagChange={setSelectedTag}
+          onEnabledFilterChange={setEnabledFilter}
+          onReminderSortChange={setReminderSort}
           onSearchQueryChange={setReminderSearch}
           onCreateReminder={openCreateDialog}
           onEditReminder={openEditDialog}
@@ -126,6 +141,7 @@ export function RemApp() {
           onStatusFilterChange={setStatusFilter}
           onSearchQueryChange={setLogSearch}
           onUpdateLogStatus={updateLogStatus}
+          onUpdateLogNote={updateLogNote}
         />
       )}
 

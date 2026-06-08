@@ -63,19 +63,15 @@ fn send_native_notification_on_main_thread(
     title: &str,
     body: Option<&str>,
 ) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        let _ = notify_rust::set_application(app.config().identifier.as_str());
-    }
+    use tauri_plugin_notification::NotificationExt;
 
-    let mut notification = notify_rust::Notification::new();
-    notification.summary(title);
+    let mut notification = app.notification().builder().title(title);
+
     if let Some(body_text) = body.filter(|value| !value.is_empty()) {
-        notification.body(body_text);
+        notification = notification.body(body_text);
     }
 
     notification
         .show()
-        .map(|_| ())
         .map_err(|e| format!("Failed to send notification: {e}"))
 }

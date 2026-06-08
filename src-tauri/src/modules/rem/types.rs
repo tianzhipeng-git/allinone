@@ -1,20 +1,21 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum RemScheduleMode {
     Cron,
     Interval,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
 pub enum RemCadence {
     Daily,
     Weekly,
     Monthly,
     Yearly,
+    Custom,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -25,7 +26,7 @@ pub enum RemLogStatus {
     Ignored,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct RemScheduleConfig {
     pub mode: RemScheduleMode,
     pub cadence: RemCadence,

@@ -2,9 +2,34 @@ export type RemFrequencyLevel = 'day' | 'week' | 'month' | 'longTerm'
 
 export type RemScheduleMode = 'cron' | 'interval'
 
-export type RemCadence = 'daily' | 'weekly' | 'monthly' | 'yearly'
+export type RemCadence = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
 
 export type RemLogStatus = 'pending' | 'confirmed' | 'ignored'
+
+export type RemEnabledFilter = 'all' | 'active'
+
+export const defaultRemEnabledFilter: RemEnabledFilter = 'active'
+
+export const remEnabledFilterOptions: RemEnabledFilter[] = ['all', 'active']
+
+export type RemReminderSort =
+  | 'nextTriggerAsc'
+  | 'nextTriggerDesc'
+  | 'titleAsc'
+  | 'titleDesc'
+  | 'updatedDesc'
+  | 'createdDesc'
+
+export const defaultRemReminderSort: RemReminderSort = 'nextTriggerAsc'
+
+export const remReminderSortOptions: RemReminderSort[] = [
+  'nextTriggerAsc',
+  'nextTriggerDesc',
+  'titleAsc',
+  'titleDesc',
+  'updatedDesc',
+  'createdDesc',
+]
 
 export interface RemScheduleConfig {
   mode: RemScheduleMode

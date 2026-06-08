@@ -305,7 +305,6 @@ async remUpdateLogNote(logId: string, note: string) : Promise<Result<RemLogEntry
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
-},
 }
 }
 
@@ -367,7 +366,7 @@ export type RecoveryError =
  * JSON serialization/deserialization error
  */
 { type: "ParseError"; message: string }
-export type RemCadence = "daily" | "weekly" | "monthly" | "yearly"
+export type RemCadence = "daily" | "weekly" | "monthly" | "yearly" | "custom"
 export type RemLogEntry = { id: string; reminder_id: string; reminder_title: string; tag: string; triggered_at: string; status: RemLogStatus; note: string; completed_at: string | null; channels: string[] }
 export type RemLogStatus = "pending" | "confirmed" | "ignored"
 export type RemNotificationChannels = { system: boolean; webhook_url: string }

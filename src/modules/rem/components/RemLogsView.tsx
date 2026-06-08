@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import type { RemLogEntry, RemLogStatus } from '../types'
-import { formatDateTime, statusKey } from '../format'
+import { statusKey } from '../format'
+import { sortRemLogs } from '../sort'
+import {
+  LogEntryActionButtons,
+  LogEntryNoteEditor,
+  useLogEntryNote,
+} from './LogEntryControls'
+import { LogTimestamps } from './LogTimestamps'
 
 interface RemLogsViewProps {
   logs: RemLogEntry[]
@@ -15,6 +22,7 @@ interface RemLogsViewProps {
   onStatusFilterChange: (status: RemLogStatus | 'all') => void
   onSearchQueryChange: (query: string) => void
   onUpdateLogStatus: (id: string, status: RemLogStatus) => void
+  onUpdateLogNote: (id: string, note: string) => void
 }
 
 const statusIcon = {
@@ -36,6 +44,7 @@ export function RemLogsView({
   onStatusFilterChange,
   onSearchQueryChange,
   onUpdateLogStatus,
+  onUpdateLogNote,
 }: RemLogsViewProps) {
   const { t } = useTranslation()
   const filteredLogs = logs
@@ -49,7 +58,8 @@ export function RemLogsView({
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
     })
-    .sort((left, right) => right.triggeredAt.localeCompare(left.triggeredAt))
+
+  const sortedLogs = sortRemLogs(filteredLogs)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto px-5 py-4">
@@ -95,14 +105,15 @@ export function RemLogsView({
       </div>
 
       <div className="grid gap-2 pb-4">
-        {filteredLogs.map(log => (
+        {sortedLogs.map(log => (
           <LogCard
             key={log.id}
             log={log}
             onUpdateLogStatus={onUpdateLogStatus}
+            onUpdateLogNote={onUpdateLogNote}
           />
         ))}
-        {filteredLogs.length === 0 && (
+        {sortedLogs.length === 0 && (
           <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
             {t('modules.rem.logs.empty')}
           </div>
@@ -145,66 +156,69 @@ function StatusSummary({
 function LogCard({
   log,
   onUpdateLogStatus,
+  onUpdateLogNote,
 }: {
   log: RemLogEntry
   onUpdateLogStatus: (id: string, status: RemLogStatus) => void
+  onUpdateLogNote: (id: string, note: string) => void
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const Icon = statusIcon[log.status]
+  const { editingNote, note, setNote, resetNote, toggleNote } = useLogEntryNote(log)
 
   return (
-    <div className="grid gap-2 rounded-lg border bg-card p-4 md:grid-cols-[1fr_auto] md:items-center">
-      <div className="min-w-0">
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              'flex size-7 items-center justify-center rounded-md',
-              statusClass[log.status]
-            )}
+    <div className="grid gap-1.5 rounded-lg border bg-card p-3">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'flex size-6 shrink-0 items-center justify-center rounded-md',
+            statusClass[log.status]
+          )}
+        >
+          <Icon className="size-3.5" />
+        </span>
+        <h3
+          className="w-36 shrink-0 truncate text-sm font-semibold sm:w-44"
+          title={log.reminderTitle}
+        >
+          {log.reminderTitle}
+        </h3>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Badge
+            variant="secondary"
+            className="h-5 shrink-0 px-1.5 text-[11px]"
           >
-            <Icon className="size-4" />
-          </span>
-          <h3 className="truncate text-sm font-semibold">
-            {log.reminderTitle}
-          </h3>
-          <Badge variant="secondary">{log.tag}</Badge>
-          <Badge variant="outline">{t(statusKey(log.status))}</Badge>
+            {log.tag}
+          </Badge>
+          <Badge variant="outline" className="h-5 shrink-0 px-1.5 text-[11px]">
+            {t(statusKey(log.status))}
+          </Badge>
+          <LogTimestamps log={log} />
+          <LogEntryActionButtons
+            log={log}
+            onUpdateLogStatus={onUpdateLogStatus}
+            onToggleNote={toggleNote}
+            className="ms-auto flex shrink-0 gap-0.5"
+          />
         </div>
-        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span>{formatDateTime(log.triggeredAt, i18n.language)}</span>
-          <span>·</span>
-          <span>
-            <Bell className="me-1 inline size-3" />
-            {log.channels
-              .map(channel => t(`modules.rem.channels.${channel}`))
-              .join(' · ')}
-          </span>
-        </div>
-        {log.note && (
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-            {log.note}
-          </p>
-        )}
       </div>
-      {log.status === 'pending' && (
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUpdateLogStatus(log.id, 'ignored')}
-          >
-            <X className="size-4" />
-            {t('modules.rem.actions.ignore')}
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onUpdateLogStatus(log.id, 'confirmed')}
-          >
-            <Check className="size-4" />
-            {t('modules.rem.actions.confirm')}
-          </Button>
-        </div>
-      )}
+      <div className="text-xs text-muted-foreground">
+        <Bell className="me-1 inline size-3" />
+        {log.channels
+          .map(channel => t(`modules.rem.channels.${channel}`))
+          .join(' · ')}
+      </div>
+      <LogEntryNoteEditor
+        log={log}
+        editingNote={editingNote}
+        note={note}
+        onNoteChange={setNote}
+        onCancel={resetNote}
+        onSave={() => {
+          onUpdateLogNote(log.id, note.trim())
+          toggleNote()
+        }}
+      />
     </div>
   )
 }

@@ -26,16 +26,34 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { remFrequencyLevels } from '../schedule'
-import type { RemFrequencyLevel, RemReminder } from '../types'
+import { sortReminders } from '../sort'
+import type {
+  RemEnabledFilter,
+  RemFrequencyLevel,
+  RemReminder,
+  RemReminderSort,
+} from '../types'
+import { remEnabledFilterOptions, remReminderSortOptions } from '../types'
 import { frequencyKey, formatDateTime } from '../format'
 
 interface RemReminderBoardProps {
   reminders: RemReminder[]
   selectedTag: string
+  enabledFilter: RemEnabledFilter
+  reminderSort: RemReminderSort
   searchQuery: string
   onSelectedTagChange: (tag: string) => void
+  onEnabledFilterChange: (filter: RemEnabledFilter) => void
+  onReminderSortChange: (sort: RemReminderSort) => void
   onSearchQueryChange: (query: string) => void
   onCreateReminder: () => void
   onEditReminder: (reminder: RemReminder) => void
@@ -65,8 +83,12 @@ const flatCoverflowWindow = 4
 export function RemReminderBoard({
   reminders,
   selectedTag,
+  enabledFilter,
+  reminderSort,
   searchQuery,
   onSelectedTagChange,
+  onEnabledFilterChange,
+  onReminderSortChange,
   onSearchQueryChange,
   onCreateReminder,
   onEditReminder,
@@ -78,14 +100,17 @@ export function RemReminderBoard({
   const tags = Array.from(new Set(reminders.map(reminder => reminder.tag)))
   const filteredReminders = reminders.filter(reminder => {
     const matchesTag = selectedTag === 'all' || reminder.tag === selectedTag
+    const matchesEnabled =
+      enabledFilter === 'all' || reminder.enabled
     const matchesSearch =
       searchQuery.trim().length === 0 ||
       `${reminder.title} ${reminder.description} ${reminder.tag}`
         .toLowerCase()
         .includes(searchQuery.toLowerCase())
 
-    return matchesTag && matchesSearch
+    return matchesTag && matchesEnabled && matchesSearch
   })
+  const sortedReminders = sortReminders(filteredReminders, reminderSort)
 
   if (reminders.length === 0) {
     return <RemEmptyState onCreateReminder={onCreateReminder} />
@@ -94,6 +119,21 @@ export function RemReminderBoard({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-auto px-5 py-4">
       <div className="mb-5 flex shrink-0 flex-wrap items-center gap-2">
+        <Select
+          value={reminderSort}
+          onValueChange={value => onReminderSortChange(value as RemReminderSort)}
+        >
+          <SelectTrigger className="h-7 w-auto min-w-40 gap-1 rounded-full px-3 text-xs">
+            <SelectValue placeholder={t('modules.rem.sort.label')} />
+          </SelectTrigger>
+          <SelectContent align="start">
+            {remReminderSortOptions.map(option => (
+              <SelectItem key={option} value={option}>
+                {t(`modules.rem.sort.${option}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <TagChip
           label={t('modules.rem.tags.all')}
           active={selectedTag === 'all'}
@@ -107,14 +147,33 @@ export function RemReminderBoard({
             onClick={() => onSelectedTagChange(tag)}
           />
         ))}
-        <div className="relative ms-auto w-full min-w-48 sm:w-64">
-          <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="ps-9"
-            value={searchQuery}
-            placeholder={t('modules.rem.search.placeholder')}
-            onChange={event => onSearchQueryChange(event.target.value)}
-          />
+        <div className="ms-auto flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Select
+            value={enabledFilter}
+            onValueChange={value =>
+              onEnabledFilterChange(value as RemEnabledFilter)
+            }
+          >
+            <SelectTrigger className="h-7 w-auto min-w-28 gap-1 rounded-full px-3 text-xs">
+              <SelectValue placeholder={t('modules.rem.enabledFilter.label')} />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {remEnabledFilterOptions.map(option => (
+                <SelectItem key={option} value={option}>
+                  {t(`modules.rem.enabledFilter.${option}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative min-w-48 flex-1 sm:w-64 sm:flex-none">
+            <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="ps-9"
+              value={searchQuery}
+              placeholder={t('modules.rem.search.placeholder')}
+              onChange={event => onSearchQueryChange(event.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -123,7 +182,7 @@ export function RemReminderBoard({
           <FrequencySection
             key={level}
             level={level}
-            reminders={filteredReminders.filter(
+            reminders={sortedReminders.filter(
               reminder => reminder.frequency === level
             )}
             onEditReminder={onEditReminder}

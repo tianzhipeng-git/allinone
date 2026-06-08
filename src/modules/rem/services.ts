@@ -9,6 +9,7 @@ import {
   type RemScheduleConfig as BackendRemScheduleConfig,
   type RemState as BackendRemState,
 } from '@/lib/tauri-bindings'
+import { formatSchedulePreview } from './format'
 import { getFrequencyLevel } from './schedule'
 import type {
   RemCadence,
@@ -140,7 +141,7 @@ function mapBackendReminder(
     updatedAt: reminder.updated_at,
     nextTriggerAt: reminder.next_trigger_at,
     schedule,
-    scheduleText: buildScheduleText(schedule, t),
+    scheduleText: formatSchedulePreview(schedule, t),
     frequency: getFrequencyLevel(new Date(reminder.next_trigger_at)),
     notifications: {
       system: reminder.notifications.system,
@@ -208,36 +209,3 @@ function toBackendSchedule(
   }
 }
 
-function buildScheduleText(schedule: RemScheduleConfig, t: TFunction): string {
-  if (schedule.mode === 'interval') {
-    return t('modules.rem.preview.interval', {
-      count: Math.max(schedule.intervalHours, 1),
-    })
-  }
-
-  if (schedule.cadence === 'weekly') {
-    return t('modules.rem.preview.weekly', {
-      days: schedule.weekdays
-        .map(day => t(`modules.rem.weekday.${day}`))
-        .join(', '),
-      time: schedule.time,
-    })
-  }
-
-  if (schedule.cadence === 'monthly') {
-    return t('modules.rem.preview.monthly', {
-      day: schedule.monthDay,
-      time: schedule.time,
-    })
-  }
-
-  if (schedule.cadence === 'yearly') {
-    return t('modules.rem.preview.yearly', {
-      month: schedule.month,
-      day: schedule.monthDay,
-      time: schedule.time,
-    })
-  }
-
-  return t('modules.rem.preview.daily', { time: schedule.time })
-}

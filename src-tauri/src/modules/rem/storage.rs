@@ -112,7 +112,9 @@ pub fn list_logs(conn: &Connection) -> Result<Vec<RemLogEntry>, String> {
             SELECT id, reminder_id, reminder_title, tag, triggered_at, status,
                    note, completed_at, channels
             FROM rem_logs
-            ORDER BY triggered_at DESC, id DESC
+            ORDER BY COALESCE(completed_at, triggered_at) DESC,
+                     triggered_at DESC,
+                     id DESC
             ",
         )
         .map_err(|e| format!("Failed to prepare REM logs query: {e}"))?;
@@ -170,8 +172,14 @@ pub fn create_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
 pub fn update_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<RemReminder, String> {
     validate_draft(draft)?;
     let id = parse_id(draft.id.as_deref(), "reminder")?;
+    let existing = get_reminder(conn, id)?;
     let schedule = normalized_schedule(&draft.schedule);
-    let next_trigger_at = store_trigger_at(get_next_trigger_at(&schedule, Local::now())?);
+    let existing_schedule = normalized_schedule(&existing.schedule);
+    let next_trigger_at = if existing_schedule == schedule {
+        existing.next_trigger_at
+    } else {
+        store_trigger_at(get_next_trigger_at(&schedule, Local::now())?)
+    };
 
     conn.execute(
         "
@@ -508,6 +516,7 @@ fn cadence_to_str(value: &RemCadence) -> &'static str {
         RemCadence::Weekly => "weekly",
         RemCadence::Monthly => "monthly",
         RemCadence::Yearly => "yearly",
+        RemCadence::Custom => "custom",
     }
 }
 
@@ -516,6 +525,7 @@ fn str_to_cadence(value: &str) -> RemCadence {
         "weekly" => RemCadence::Weekly,
         "monthly" => RemCadence::Monthly,
         "yearly" => RemCadence::Yearly,
+        "custom" => RemCadence::Custom,
         _ => RemCadence::Daily,
     }
 }

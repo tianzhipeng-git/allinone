@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, TimeZone, Utc};
+use cron::Schedule;
 
 use super::types::{RemCadence, RemScheduleConfig, RemScheduleMode};
 
@@ -10,13 +13,24 @@ pub fn get_next_trigger_at(
         return Ok(now + Duration::hours(i64::from(schedule.interval_hours.max(1))));
     }
 
-    let (hour, minute) = parse_time(&schedule.time);
-
     match schedule.cadence {
-        RemCadence::Daily => next_daily(hour, minute, now),
-        RemCadence::Weekly => next_weekly(&schedule.weekdays, hour, minute, now),
-        RemCadence::Monthly => next_monthly(schedule.month_day, hour, minute, now),
-        RemCadence::Yearly => next_yearly(schedule.month, schedule.month_day, hour, minute, now),
+        RemCadence::Custom => next_custom(&schedule.cron_expression, now),
+        RemCadence::Daily => {
+            let (hour, minute) = parse_time(&schedule.time);
+            next_daily(hour, minute, now)
+        }
+        RemCadence::Weekly => {
+            let (hour, minute) = parse_time(&schedule.time);
+            next_weekly(&schedule.weekdays, hour, minute, now)
+        }
+        RemCadence::Monthly => {
+            let (hour, minute) = parse_time(&schedule.time);
+            next_monthly(schedule.month_day, hour, minute, now)
+        }
+        RemCadence::Yearly => {
+            let (hour, minute) = parse_time(&schedule.time);
+            next_yearly(schedule.month, schedule.month_day, hour, minute, now)
+        }
     }
 }
 
@@ -26,7 +40,11 @@ pub fn normalized_schedule(schedule: &RemScheduleConfig) -> RemScheduleConfig {
     next.month_day = next.month_day.clamp(1, 31);
     next.month = next.month.clamp(1, 12);
     next.weekdays = normalized_weekdays(&next.weekdays);
-    next.cron_expression = build_cron_expression(&next);
+    if matches!(next.cadence, RemCadence::Custom) {
+        next.cron_expression = next.cron_expression.trim().to_string();
+    } else {
+        next.cron_expression = build_cron_expression(&next);
+    }
     next
 }
 
@@ -35,8 +53,13 @@ pub fn build_cron_expression(schedule: &RemScheduleConfig) -> String {
         return format!("0 */{} * * *", schedule.interval_hours.max(1));
     }
 
+    if matches!(schedule.cadence, RemCadence::Custom) {
+        return schedule.cron_expression.trim().to_string();
+    }
+
     let (hour, minute) = parse_time(&schedule.time);
     match schedule.cadence {
+        RemCadence::Custom => schedule.cron_expression.trim().to_string(),
         RemCadence::Daily => format!("{minute} {hour} * * *"),
         RemCadence::Weekly => format!(
             "{minute} {hour} * * {}",
@@ -59,6 +82,20 @@ pub fn parse_datetime(value: &str) -> Result<DateTime<Utc>, String> {
     DateTime::parse_from_rfc3339(value)
         .map(|value| value.with_timezone(&Utc))
         .map_err(|e| format!("Failed to parse REM date: {e}"))
+}
+
+fn next_custom(expression: &str, now: DateTime<Local>) -> Result<DateTime<Local>, String> {
+    let expression = expression.trim();
+    if expression.is_empty() {
+        return Err("Cron expression cannot be empty".to_string());
+    }
+
+    let schedule = Schedule::from_str(expression)
+        .map_err(|error| format!("Invalid cron expression: {error}"))?;
+    schedule
+        .after(&now)
+        .next()
+        .ok_or_else(|| "Cron expression has no upcoming occurrence".to_string())
 }
 
 fn next_daily(hour: u32, minute: u32, now: DateTime<Local>) -> Result<DateTime<Local>, String> {

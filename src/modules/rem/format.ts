@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next'
-import type { RemFrequencyLevel, RemLogStatus } from './types'
+import type { RemFrequencyLevel, RemLogStatus, RemScheduleConfig } from './types'
 
 export function formatDateTime(value: string, language: string): string {
   return new Intl.DateTimeFormat(language, {
@@ -43,4 +43,46 @@ export function statusKey(status: RemLogStatus): string {
 
 export function frequencyKey(level: RemFrequencyLevel): string {
   return `modules.rem.frequency.${level}`
+}
+
+export function formatSchedulePreview(
+  schedule: RemScheduleConfig,
+  t: TFunction
+): string {
+  if (schedule.mode === 'interval') {
+    return t('modules.rem.preview.interval', {
+      count: Math.max(schedule.intervalHours, 1),
+    })
+  }
+
+  if (schedule.cadence === 'custom') {
+    const expression = schedule.cronExpression.trim()
+    return expression || t('modules.rem.preview.customEmpty')
+  }
+
+  if (schedule.cadence === 'weekly') {
+    return t('modules.rem.preview.weekly', {
+      days: schedule.weekdays
+        .map(day => t(`modules.rem.weekday.${day}`))
+        .join(', '),
+      time: schedule.time,
+    })
+  }
+
+  if (schedule.cadence === 'monthly') {
+    return t('modules.rem.preview.monthly', {
+      day: schedule.monthDay,
+      time: schedule.time,
+    })
+  }
+
+  if (schedule.cadence === 'yearly') {
+    return t('modules.rem.preview.yearly', {
+      month: schedule.month,
+      day: schedule.monthDay,
+      time: schedule.time,
+    })
+  }
+
+  return t('modules.rem.preview.daily', { time: schedule.time })
 }

@@ -61,6 +61,22 @@ describe('rem schedule helpers', () => {
     )
   })
 
+  it('preserves custom cron expressions', () => {
+    const schedule = updateCronExpression({
+      ...createDefaultSchedule(),
+      cadence: 'custom',
+      cronExpression: '30 8 * * 1,3,5',
+    })
+
+    expect(buildCronExpression(schedule)).toBe('30 8 * * 1,3,5')
+    expect(
+      updateCronExpression({
+        ...schedule,
+        cronExpression: '0 12 * * *',
+      }).cronExpression
+    ).toBe('0 12 * * *')
+  })
+
   it('uses interval hours for interval schedules', () => {
     const schedule = updateCronExpression({
       ...createDefaultSchedule(),

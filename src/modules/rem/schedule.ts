@@ -41,6 +41,10 @@ export function getNextTriggerAt(
     )
   }
 
+  if (schedule.cadence === 'custom') {
+    return now
+  }
+
   const [hour, minute] = parseTime(schedule.time)
 
   if (schedule.cadence === 'daily') {
@@ -61,6 +65,10 @@ export function getNextTriggerAt(
 export function buildCronExpression(schedule: RemScheduleConfig): string {
   if (schedule.mode === 'interval') {
     return `0 */${Math.max(schedule.intervalHours, 1)} * * *`
+  }
+
+  if (schedule.cadence === 'custom') {
+    return schedule.cronExpression.trim()
   }
 
   const [hour, minute] = parseTime(schedule.time)
@@ -198,7 +206,22 @@ export function updateCronExpression(
   schedule: RemScheduleConfig,
   cadence?: RemCadence
 ): RemScheduleConfig {
+  if (cadence === 'custom') {
+    return {
+      ...schedule,
+      cadence: 'custom',
+      cronExpression:
+        schedule.cronExpression.trim() ||
+        buildCronExpression({ ...schedule, cadence: schedule.cadence }),
+    }
+  }
+
   const nextSchedule = cadence ? { ...schedule, cadence } : schedule
+
+  if (nextSchedule.cadence === 'custom') {
+    return nextSchedule
+  }
+
   return {
     ...nextSchedule,
     cronExpression: buildCronExpression(nextSchedule),

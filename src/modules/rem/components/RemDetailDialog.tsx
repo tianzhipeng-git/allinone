@@ -1,16 +1,13 @@
 import {
   Bell,
   CalendarClock,
-  Check,
   Clock,
   FilePenLine,
   Pencil,
   Trash2,
-  X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { TFunction } from 'i18next'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,9 +18,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { RemLogEntry, RemLogStatus, RemReminder } from '../types'
+import { sortRemLogs } from '../sort'
+import {
+  LogEntryActionButtons,
+  LogEntryNoteEditor,
+  useLogEntryNote,
+} from './LogEntryControls'
+import { LogTimestamps } from './LogTimestamps'
 import {
   formatDateTime,
   formatFullDateTime,
@@ -64,9 +67,9 @@ export function RemDetailDialog({
     return null
   }
 
-  const reminderLogs = logs
-    .filter(log => log.reminderId === reminder.id)
-    .sort((left, right) => right.triggeredAt.localeCompare(left.triggeredAt))
+  const reminderLogs = sortRemLogs(
+    logs.filter(log => log.reminderId === reminder.id)
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,81 +223,35 @@ function DetailLogRow({
   onUpdateLogStatus: (id: string, status: RemLogStatus) => void
   onUpdateLogNote: (id: string, note: string) => void
 }) {
-  const { t, i18n } = useTranslation()
-  const [editingNote, setEditingNote] = useState(false)
-  const [note, setNote] = useState(log.note)
+  const { t } = useTranslation()
+  const { editingNote, note, setNote, resetNote, toggleNote } = useLogEntryNote(log)
 
   return (
-    <div className="grid gap-2 rounded-md border bg-muted/20 p-3">
+    <div className="grid gap-1.5 rounded-md border bg-muted/20 p-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <span className={cn('size-2 rounded-full', statusClass[log.status])} />
-        <span className="text-sm font-medium">
-          {formatDateTime(log.triggeredAt, i18n.language)}
-        </span>
-        <Badge variant="outline">{t(statusKey(log.status))}</Badge>
-        <div className="ms-auto flex gap-1">
-          {log.status === 'pending' && (
-            <>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t('modules.rem.actions.confirm')}
-                onClick={() => onUpdateLogStatus(log.id, 'confirmed')}
-              >
-                <Check className="size-4" />
-              </Button>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t('modules.rem.actions.ignore')}
-                onClick={() => onUpdateLogStatus(log.id, 'ignored')}
-              >
-                <X className="size-4" />
-              </Button>
-            </>
-          )}
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label={t('modules.rem.actions.note')}
-            onClick={() => setEditingNote(!editingNote)}
-          >
-            <FilePenLine className="size-4" />
-          </Button>
-        </div>
+        <Badge variant="outline" className="h-5 px-1.5 text-[11px]">
+          {t(statusKey(log.status))}
+        </Badge>
+        <LogTimestamps log={log} />
+        <LogEntryActionButtons
+          log={log}
+          onUpdateLogStatus={onUpdateLogStatus}
+          onToggleNote={toggleNote}
+          className="ms-auto flex gap-0.5"
+        />
       </div>
-      {log.note && !editingNote && (
-        <p className="text-sm text-muted-foreground">{log.note}</p>
-      )}
-      {editingNote && (
-        <div className="grid gap-2">
-          <Textarea
-            value={note}
-            onChange={event => setNote(event.target.value)}
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setNote(log.note)
-                setEditingNote(false)
-              }}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                onUpdateLogNote(log.id, note.trim())
-                setEditingNote(false)
-              }}
-            >
-              {t('modules.rem.actions.save')}
-            </Button>
-          </div>
-        </div>
-      )}
+      <LogEntryNoteEditor
+        log={log}
+        editingNote={editingNote}
+        note={note}
+        onNoteChange={setNote}
+        onCancel={resetNote}
+        onSave={() => {
+          onUpdateLogNote(log.id, note.trim())
+          toggleNote()
+        }}
+      />
     </div>
   )
 }
