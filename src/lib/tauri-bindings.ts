@@ -29,6 +29,13 @@ export type {
   GtdImportPreview,
   GtdTree,
   JsonValue,
+  RemLogEntry,
+  RemLogStatus,
+  RemNotificationChannels,
+  RemReminder,
+  RemReminderDraft,
+  RemScheduleConfig,
+  RemState,
   RecoveryError,
 } from './bindings'
 

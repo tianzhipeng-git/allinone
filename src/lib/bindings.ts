@@ -249,6 +249,63 @@ async gtdSaveDocument(documentId: number, content: string) : Promise<Result<null
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async remGetState() : Promise<Result<RemState, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_get_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remCreateReminder(draft: RemReminderDraft) : Promise<Result<RemReminder, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_create_reminder", { draft }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remUpdateReminder(draft: RemReminderDraft) : Promise<Result<RemReminder, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_update_reminder", { draft }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remToggleReminder(reminderId: string) : Promise<Result<RemReminder, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_toggle_reminder", { reminderId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remDeleteReminder(reminderId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_delete_reminder", { reminderId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remUpdateLogStatus(logId: string, status: RemLogStatus) : Promise<Result<RemLogEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_update_log_status", { logId, status }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async remUpdateLogNote(logId: string, note: string) : Promise<Result<RemLogEntry, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("rem_update_log_note", { logId, note }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 }
 }
 
@@ -310,6 +367,15 @@ export type RecoveryError =
  * JSON serialization/deserialization error
  */
 { type: "ParseError"; message: string }
+export type RemCadence = "daily" | "weekly" | "monthly" | "yearly"
+export type RemLogEntry = { id: string; reminder_id: string; reminder_title: string; tag: string; triggered_at: string; status: RemLogStatus; note: string; completed_at: string | null; channels: string[] }
+export type RemLogStatus = "pending" | "confirmed" | "ignored"
+export type RemNotificationChannels = { system: boolean; webhook_url: string }
+export type RemReminder = { id: string; title: string; description: string; tag: string; enabled: boolean; created_at: string; updated_at: string; next_trigger_at: string; schedule: RemScheduleConfig; notifications: RemNotificationChannels }
+export type RemReminderDraft = { id: string | null; title: string; description: string; tag: string; enabled: boolean; schedule: RemScheduleConfig; notifications: RemNotificationChannels }
+export type RemScheduleConfig = { mode: RemScheduleMode; cadence: RemCadence; time: string; weekdays: number[]; month_day: number; month: number; interval_hours: number; cron_expression: string }
+export type RemScheduleMode = "cron" | "interval"
+export type RemState = { reminders: RemReminder[]; logs: RemLogEntry[] }
 
 /** tauri-specta globals **/
 

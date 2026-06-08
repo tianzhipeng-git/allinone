@@ -34,6 +34,12 @@ tauri-plugin-os = "2"
 tauri-plugin-global-shortcut = "2"
 log = "0.4"
 regex = "1"
+chrono = { version = "0.4", features = ["clock", "serde"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "rustls-tls",
+] }
 
 # Type-safe Tauri command bindings
 specta = { version = "=2.0.0-rc.22", features = ["derive", "serde_json"] }
@@ -49,6 +55,10 @@ tauri-plugin-window-state = "2"
 # macOS-only: NSPanel for native panel behavior (fullscreen overlay, click-outside dismiss)
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+notify-rust = "4.12"
+
+[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
+notify-rust = "4.12"
 
 # Optimize for smaller binary size in release builds
 [profile.release]

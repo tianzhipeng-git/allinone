@@ -142,6 +142,8 @@ pub fn run() {
                 // Non-fatal: app can still run without quick pane
             }
 
+            modules::rem::scheduler::start(app.handle().clone());
+
             // NOTE: Application menu is built from JavaScript for i18n support
             // See src/lib/menu.ts for the menu implementation
 

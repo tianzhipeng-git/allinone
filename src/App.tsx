@@ -1,12 +1,18 @@
 import { useEffect } from 'react'
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
+import { useTranslation } from 'react-i18next'
 import { initializeCommandSystem } from './lib/commands'
 import { buildAppMenu, setupMenuLanguageListener } from './lib/menu'
 import { initializeLanguage } from './i18n/language-init'
 import { logger } from './lib/logger'
 import { cleanupOldFiles } from './lib/recovery'
 import { commands } from './lib/tauri-bindings'
+import {
+  ensureNotificationPermission,
+  listenForRemNotifications,
+} from './modules/rem/global-notifications'
+import { useRemNotificationActions } from './modules/rem/notification-actions'
 import './App.css'
 import { MainWindow } from './components/layout/MainWindow'
 import { ThemeProvider } from './components/ThemeProvider'
@@ -15,6 +21,8 @@ import { useSquareCornersEffect } from './hooks/useSquareCornersEffect'
 
 function App() {
   useSquareCornersEffect()
+  const { t } = useTranslation()
+  useRemNotificationActions(t)
 
   // Initialize command system and cleanup on app startup
   useEffect(() => {
@@ -108,7 +116,14 @@ function App() {
 
     // Check for updates 5 seconds after app loads
     const updateTimer = setTimeout(checkForUpdates, 5000)
-    return () => clearTimeout(updateTimer)
+
+    void ensureNotificationPermission()
+    const remNotificationListener = listenForRemNotifications()
+
+    return () => {
+      clearTimeout(updateTimer)
+      void remNotificationListener.then(dispose => dispose())
+    }
   }, [])
 
   return (

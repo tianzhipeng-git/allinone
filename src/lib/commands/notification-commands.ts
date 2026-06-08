@@ -12,4 +12,18 @@ export const notificationCommands: AppCommand[] = [
       await notifications.success('Test Toast', 'This is a test notification')
     },
   },
+  {
+    id: 'notification.test-native',
+    labelKey: 'commands.testNativeNotification.label',
+    descriptionKey: 'commands.testNativeNotification.description',
+    group: 'debug',
+    keywords: ['test', 'native', 'notification', 'system', 'debug'],
+    async execute() {
+      await notifications.success(
+        'Test Native Notification',
+        'If you see this banner, system notifications are working.',
+        true
+      )
+    },
+  },
 ]
