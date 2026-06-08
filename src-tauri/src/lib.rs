@@ -47,7 +47,7 @@ pub fn run() {
     {
         app_builder = app_builder.plugin(
             tauri_plugin_window_state::Builder::new()
-                .with_state_flags(tauri_plugin_window_state::StateFlags::all())
+                .with_state_flags(app_tray::main_window_state_flags())
                 .with_denylist(&["quick-pane"])
                 .build(),
         );

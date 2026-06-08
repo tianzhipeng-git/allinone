@@ -1,16 +1,26 @@
 //! System tray integration.
 
+use std::time::Duration;
+
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, Wry,
 };
+#[cfg(desktop)]
+use tauri_plugin_window_state::StateFlags;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "main-tray";
 const TRAY_SHOW_ID: &str = "tray-show-main";
 const TRAY_HIDE_ID: &str = "tray-hide-main";
 const TRAY_QUIT_ID: &str = "tray-quit";
+const FULLSCREEN_EXIT_BEFORE_HIDE_DELAY: Duration = Duration::from_millis(900);
+
+#[cfg(desktop)]
+pub fn main_window_state_flags() -> StateFlags {
+    StateFlags::POSITION | StateFlags::SIZE
+}
 
 /// Creates the app system tray and wires menu/click behavior.
 #[cfg(desktop)]
@@ -58,16 +68,14 @@ pub fn show_main_window(app: &AppHandle<Wry>) {
     set_dock_visible(app, true);
 
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        if let Err(e) = window.show() {
-            log::warn!("Failed to show main window: {e}");
+        if window.is_fullscreen().unwrap_or(false) {
+            if let Err(e) = window.set_fullscreen(false) {
+                log::warn!("Failed to exit fullscreen before showing main window: {e}");
+            }
         }
 
-        #[cfg(desktop)]
-        {
-            use tauri_plugin_window_state::{StateFlags, WindowExt};
-            if let Err(e) = window.restore_state(StateFlags::all()) {
-                log::debug!("Failed to restore main window state: {e}");
-            }
+        if let Err(e) = window.show() {
+            log::warn!("Failed to show main window: {e}");
         }
 
         if let Err(e) = window.unminimize() {
@@ -86,14 +94,33 @@ pub fn show_main_window(app: &AppHandle<Wry>) {
 #[cfg(desktop)]
 pub fn hide_main_window(app: &AppHandle<Wry>) {
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        #[cfg(desktop)]
-        {
-            use tauri_plugin_window_state::{AppHandleExt, StateFlags};
-            if let Err(e) = app.save_window_state(StateFlags::all()) {
-                log::warn!("Failed to save window state before hiding: {e}");
+        if window.is_fullscreen().unwrap_or(false) {
+            if let Err(e) = window.set_fullscreen(false) {
+                log::warn!("Failed to exit fullscreen before hiding main window: {e}");
             }
+
+            let app = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                std::thread::sleep(FULLSCREEN_EXIT_BEFORE_HIDE_DELAY);
+                hide_main_window_now(&app, false);
+            });
+            return;
         }
 
+        hide_main_window_now(app, true);
+    }
+}
+
+#[cfg(desktop)]
+fn hide_main_window_now(app: &AppHandle<Wry>, save_window_state: bool) {
+    if save_window_state {
+        use tauri_plugin_window_state::AppHandleExt;
+        if let Err(e) = app.save_window_state(main_window_state_flags()) {
+            log::warn!("Failed to save window state before hiding: {e}");
+        }
+    }
+
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
         if let Err(e) = window.hide() {
             log::warn!("Failed to hide main window: {e}");
         } else {
@@ -106,8 +133,14 @@ pub fn hide_main_window(app: &AppHandle<Wry>) {
 
 #[cfg(target_os = "macos")]
 fn set_dock_visible(app: &AppHandle<Wry>, visible: bool) {
-    if let Err(e) = app.set_dock_visibility(visible) {
-        log::warn!("Failed to set Dock visibility to {visible}: {e}");
+    let activation_policy = if visible {
+        tauri::ActivationPolicy::Regular
+    } else {
+        tauri::ActivationPolicy::Accessory
+    };
+
+    if let Err(e) = app.set_activation_policy(activation_policy) {
+        log::warn!("Failed to set macOS activation policy for Dock visibility {visible}: {e}");
     }
 }
 
