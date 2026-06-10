@@ -10,6 +10,13 @@ pub enum RemScheduleMode {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(rename_all = "camelCase")]
+pub enum RemIntervalUnit {
+    Hours,
+    Days,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
 pub enum RemCadence {
     Daily,
     Weekly,
@@ -35,6 +42,8 @@ pub struct RemScheduleConfig {
     pub month_day: i32,
     pub month: i32,
     pub interval_hours: i32,
+    pub interval_days: i32,
+    pub interval_unit: RemIntervalUnit,
     pub cron_expression: String,
 }
 
@@ -47,6 +56,7 @@ pub struct RemWebhookHeader {
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct RemNotificationChannels {
     pub system: bool,
+    pub webhook: bool,
     pub webhook_url: String,
     pub webhook_body_template: String,
     pub webhook_headers: Vec<RemWebhookHeader>,

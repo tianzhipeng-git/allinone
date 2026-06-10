@@ -2,6 +2,8 @@ export type RemFrequencyLevel = 'day' | 'week' | 'month' | 'longTerm'
 
 export type RemScheduleMode = 'cron' | 'interval'
 
+export type RemIntervalUnit = 'hours' | 'days'
+
 export type RemCadence = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom'
 
 export type RemLogStatus = 'pending' | 'confirmed' | 'ignored'
@@ -39,6 +41,8 @@ export interface RemScheduleConfig {
   monthDay: number
   month: number
   intervalHours: number
+  intervalDays: number
+  intervalUnit: RemIntervalUnit
   cronExpression: string
 }
 
@@ -49,20 +53,29 @@ export interface RemWebhookHeader {
 
 export interface RemNotificationChannels {
   system: boolean
+  webhook: boolean
   webhookUrl: string
   webhookBodyTemplate: string
   webhookHeaders: RemWebhookHeader[]
 }
 
+export const defaultWebhookUrl =
+  'https://open.feishu.cn/open-apis/bot/v2/hook/09896914-03b1-452c-a745-3bd31aee4c96'
+
 export const defaultWebhookBodyTemplate = `{
-  "module": "rem",
-  "reminderId": "{{reminderId}}",
-  "title": "{{title}}",
-  "description": "{{description}}",
-  "tag": "{{tag}}",
-  "triggeredAt": "{{triggeredAt}}",
-  "nextTriggerAt": "{{nextTriggerAt}}"
+  "msg_type": "text",
+  "content": {
+    "text": "REM提醒 {{title}} {{triggeredAt}}"
+  }
 }`
+
+export const defaultNotificationChannels = (): RemNotificationChannels => ({
+  system: true,
+  webhook: false,
+  webhookUrl: '',
+  webhookBodyTemplate: '',
+  webhookHeaders: [],
+})
 
 export const webhookTemplateVariables = [
   'module',

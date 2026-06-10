@@ -6,8 +6,8 @@ use super::schedule::{
     build_cron_expression, get_next_trigger_at, normalized_schedule, parse_datetime,
 };
 use super::types::{
-    RemCadence, RemLogEntry, RemLogStatus, RemNotificationChannels, RemReminder, RemReminderDraft,
-    RemScheduleConfig, RemScheduleMode, RemState, RemWebhookHeader,
+    RemCadence, RemIntervalUnit, RemLogEntry, RemLogStatus, RemNotificationChannels, RemReminder,
+    RemReminderDraft, RemScheduleConfig, RemScheduleMode, RemState, RemWebhookHeader,
 };
 
 pub fn connect(app: &AppHandle) -> Result<Connection, String> {
@@ -43,6 +43,7 @@ fn migrate(conn: &Connection) -> Result<(), String> {
             interval_hours INTEGER NOT NULL,
             cron_expression TEXT NOT NULL,
             notification_system INTEGER NOT NULL DEFAULT 1,
+            notification_webhook INTEGER NOT NULL DEFAULT 0,
             webhook_url TEXT NOT NULL DEFAULT '',
             webhook_body_template TEXT NOT NULL DEFAULT '',
             webhook_headers TEXT NOT NULL DEFAULT '[]',
@@ -78,6 +79,19 @@ fn migrate(conn: &Connection) -> Result<(), String> {
 
     ensure_column(conn, "rem_reminders", "webhook_body_template", "TEXT NOT NULL DEFAULT ''")?;
     ensure_column(conn, "rem_reminders", "webhook_headers", "TEXT NOT NULL DEFAULT '[]'")?;
+    ensure_column(
+        conn,
+        "rem_reminders",
+        "notification_webhook",
+        "INTEGER NOT NULL DEFAULT 0",
+    )?;
+    ensure_column(conn, "rem_reminders", "interval_days", "INTEGER NOT NULL DEFAULT 1")?;
+    ensure_column(
+        conn,
+        "rem_reminders",
+        "interval_unit",
+        "TEXT NOT NULL DEFAULT 'hours'",
+    )?;
 
     Ok(())
 }
@@ -123,10 +137,10 @@ pub fn list_reminders(conn: &Connection) -> Result<Vec<RemReminder>, String> {
         .prepare(
             "
             SELECT id, title, description, tag, enabled, schedule_mode, cadence,
-                   time, weekdays, month_day, month, interval_hours,
-                   cron_expression, notification_system, webhook_url,
-                   webhook_body_template, webhook_headers,
-                   next_trigger_at, created_at, updated_at
+                   time, weekdays, month_day, month, interval_hours, interval_days,
+                   interval_unit, cron_expression, notification_system,
+                   notification_webhook, webhook_url, webhook_body_template,
+                   webhook_headers, next_trigger_at, created_at, updated_at
             FROM rem_reminders
             ORDER BY enabled DESC, next_trigger_at ASC, title COLLATE NOCASE
             ",
@@ -175,11 +189,12 @@ pub fn create_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
         "
         INSERT INTO rem_reminders (
             title, description, tag, enabled, schedule_mode, cadence, time,
-            weekdays, month_day, month, interval_hours, cron_expression,
-            notification_system, webhook_url, webhook_body_template,
+            weekdays, month_day, month, interval_hours, interval_days,
+            interval_unit, cron_expression, notification_system,
+            notification_webhook, webhook_url, webhook_body_template,
             webhook_headers, next_trigger_at, created_at, updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
         ",
         params![
             draft.title.trim(),
@@ -193,8 +208,11 @@ pub fn create_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             schedule.month_day,
             schedule.month,
             schedule.interval_hours,
+            schedule.interval_days,
+            interval_unit_to_str(&schedule.interval_unit),
             build_cron_expression(&schedule),
             bool_to_i32(draft.notifications.system),
+            bool_to_i32(draft.notifications.webhook),
             draft.notifications.webhook_url.trim(),
             draft.notifications.webhook_body_template.trim(),
             webhook_headers_to_json(&draft.notifications.webhook_headers)?,
@@ -235,14 +253,17 @@ pub fn update_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             month_day = ?9,
             month = ?10,
             interval_hours = ?11,
-            cron_expression = ?12,
-            notification_system = ?13,
-            webhook_url = ?14,
-            webhook_body_template = ?15,
-            webhook_headers = ?16,
-            next_trigger_at = ?17,
-            updated_at = ?18
-        WHERE id = ?19
+            interval_days = ?12,
+            interval_unit = ?13,
+            cron_expression = ?14,
+            notification_system = ?15,
+            notification_webhook = ?16,
+            webhook_url = ?17,
+            webhook_body_template = ?18,
+            webhook_headers = ?19,
+            next_trigger_at = ?20,
+            updated_at = ?21
+        WHERE id = ?22
         ",
         params![
             draft.title.trim(),
@@ -256,8 +277,11 @@ pub fn update_reminder(conn: &Connection, draft: &RemReminderDraft) -> Result<Re
             schedule.month_day,
             schedule.month,
             schedule.interval_hours,
+            schedule.interval_days,
+            interval_unit_to_str(&schedule.interval_unit),
             build_cron_expression(&schedule),
             bool_to_i32(draft.notifications.system),
+            bool_to_i32(draft.notifications.webhook),
             draft.notifications.webhook_url.trim(),
             draft.notifications.webhook_body_template.trim(),
             webhook_headers_to_json(&draft.notifications.webhook_headers)?,
@@ -335,10 +359,10 @@ pub fn due_reminders(conn: &Connection, now: DateTime<Utc>) -> Result<Vec<RemRem
         .prepare(
             "
             SELECT id, title, description, tag, enabled, schedule_mode, cadence,
-                   time, weekdays, month_day, month, interval_hours,
-                   cron_expression, notification_system, webhook_url,
-                   webhook_body_template, webhook_headers,
-                   next_trigger_at, created_at, updated_at
+                   time, weekdays, month_day, month, interval_hours, interval_days,
+                   interval_unit, cron_expression, notification_system,
+                   notification_webhook, webhook_url, webhook_body_template,
+                   webhook_headers, next_trigger_at, created_at, updated_at
             FROM rem_reminders
             WHERE enabled = 1
             ORDER BY next_trigger_at ASC
@@ -420,10 +444,10 @@ fn get_reminder(conn: &Connection, id: i64) -> Result<RemReminder, String> {
     conn.query_row(
         "
         SELECT id, title, description, tag, enabled, schedule_mode, cadence,
-               time, weekdays, month_day, month, interval_hours,
-               cron_expression, notification_system, webhook_url,
-               webhook_body_template, webhook_headers,
-               next_trigger_at, created_at, updated_at
+               time, weekdays, month_day, month, interval_hours, interval_days,
+               interval_unit, cron_expression, notification_system,
+               notification_webhook, webhook_url, webhook_body_template,
+               webhook_headers, next_trigger_at, created_at, updated_at
         FROM rem_reminders
         WHERE id = ?1
         ",
@@ -460,7 +484,9 @@ fn map_reminder(row: &Row<'_>) -> rusqlite::Result<RemReminder> {
         month_day: row.get(9)?,
         month: row.get(10)?,
         interval_hours: row.get(11)?,
-        cron_expression: row.get(12)?,
+        interval_days: row.get(12)?,
+        interval_unit: str_to_interval_unit(&row.get::<_, String>(13)?),
+        cron_expression: row.get(14)?,
     };
 
     Ok(RemReminder {
@@ -471,14 +497,15 @@ fn map_reminder(row: &Row<'_>) -> rusqlite::Result<RemReminder> {
         enabled: row.get::<_, i32>(4)? == 1,
         schedule,
         notifications: RemNotificationChannels {
-            system: row.get::<_, i32>(13)? == 1,
-            webhook_url: row.get(14)?,
-            webhook_body_template: row.get(15)?,
-            webhook_headers: webhook_headers_from_json(&row.get::<_, String>(16)?)?,
+            system: row.get::<_, i32>(15)? == 1,
+            webhook: row.get::<_, i32>(16)? == 1,
+            webhook_url: row.get(17)?,
+            webhook_body_template: row.get(18)?,
+            webhook_headers: webhook_headers_from_json(&row.get::<_, String>(19)?)?,
         },
-        next_trigger_at: row.get(17)?,
-        created_at: row.get(18)?,
-        updated_at: row.get(19)?,
+        next_trigger_at: row.get(20)?,
+        created_at: row.get(21)?,
+        updated_at: row.get(22)?,
     })
 }
 
@@ -505,11 +532,16 @@ fn validate_draft(draft: &RemReminderDraft) -> Result<(), String> {
         return Err("Reminder tag cannot be empty".to_string());
     }
 
-    if !draft.notifications.webhook_url.trim().is_empty()
+    if draft.notifications.webhook
+        && !draft.notifications.webhook_url.trim().is_empty()
         && !draft.notifications.webhook_url.starts_with("http://")
         && !draft.notifications.webhook_url.starts_with("https://")
     {
         return Err("Webhook URL must start with http:// or https://".to_string());
+    }
+
+    if draft.notifications.webhook && draft.notifications.webhook_url.trim().is_empty() {
+        return Err("Webhook URL cannot be empty when webhook notifications are enabled".to_string());
     }
 
     for header in &draft.notifications.webhook_headers {
@@ -566,6 +598,20 @@ fn str_to_schedule_mode(value: &str) -> RemScheduleMode {
     match value {
         "interval" => RemScheduleMode::Interval,
         _ => RemScheduleMode::Cron,
+    }
+}
+
+fn interval_unit_to_str(value: &RemIntervalUnit) -> &'static str {
+    match value {
+        RemIntervalUnit::Days => "days",
+        RemIntervalUnit::Hours => "hours",
+    }
+}
+
+fn str_to_interval_unit(value: &str) -> RemIntervalUnit {
+    match value {
+        "days" => RemIntervalUnit::Days,
+        _ => RemIntervalUnit::Hours,
     }
 }
 

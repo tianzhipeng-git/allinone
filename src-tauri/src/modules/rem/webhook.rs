@@ -1,13 +1,10 @@
 use super::types::{RemNotificationChannels, RemReminder};
 
 const DEFAULT_BODY_TEMPLATE: &str = r#"{
-  "module": "rem",
-  "reminderId": "{{reminderId}}",
-  "title": "{{title}}",
-  "description": "{{description}}",
-  "tag": "{{tag}}",
-  "triggeredAt": "{{triggeredAt}}",
-  "nextTriggerAt": "{{nextTriggerAt}}"
+  "msg_type": "text",
+  "content": {
+    "text": "REM提醒 {{title}} {{triggeredAt}}"
+  }
 }"#;
 
 pub fn render_webhook_body(reminder: &RemReminder, triggered_at: &str) -> String {
@@ -88,7 +85,7 @@ fn json_string_fragment(value: &str) -> String {
 mod tests {
     use super::*;
     use crate::modules::rem::types::{
-        RemCadence, RemNotificationChannels, RemScheduleConfig, RemScheduleMode,
+        RemCadence, RemIntervalUnit, RemNotificationChannels, RemScheduleConfig, RemScheduleMode,
         RemWebhookHeader,
     };
 
@@ -110,6 +107,8 @@ mod tests {
                 month_day: 1,
                 month: 1,
                 interval_hours: 2,
+                interval_days: 1,
+                interval_unit: RemIntervalUnit::Hours,
                 cron_expression: String::new(),
             },
             notifications,
@@ -120,21 +119,23 @@ mod tests {
     fn renders_default_template_when_body_is_empty() {
         let reminder = sample_reminder(RemNotificationChannels {
             system: false,
+            webhook: true,
             webhook_url: "https://example.com/hook".to_string(),
             webhook_body_template: String::new(),
             webhook_headers: vec![],
         });
 
         let body = render_webhook_body(&reminder, "2026-01-01T09:00:00Z");
-        assert!(body.contains("\"reminderId\": \"42\""));
-        assert!(body.contains("\"title\": \"Drink water\""));
-        assert!(body.contains("\"triggeredAt\": \"2026-01-01T09:00:00Z\""));
+        assert!(body.contains("\"msg_type\": \"text\""));
+        assert!(body.contains("Drink water"));
+        assert!(body.contains("2026-01-01T09:00:00Z"));
     }
 
     #[test]
     fn renders_custom_template_with_variables() {
         let reminder = sample_reminder(RemNotificationChannels {
             system: false,
+            webhook: true,
             webhook_url: "https://example.com/hook".to_string(),
             webhook_body_template: r#"{"text":"[{{tag}}] {{title}} at {{triggeredAt}}"}"#.to_string(),
             webhook_headers: vec![],
@@ -151,6 +152,7 @@ mod tests {
     fn escapes_special_characters_in_template_values() {
         let mut reminder = sample_reminder(RemNotificationChannels {
             system: false,
+            webhook: true,
             webhook_url: "https://example.com/hook".to_string(),
             webhook_body_template: r#"{"title":"{{title}}"}"#.to_string(),
             webhook_headers: vec![],
@@ -165,6 +167,7 @@ mod tests {
     fn normalizes_smart_quotes_in_custom_template() {
         let reminder = sample_reminder(RemNotificationChannels {
             system: false,
+            webhook: true,
             webhook_url: "https://example.com/hook".to_string(),
             webhook_body_template: "{\n    \"msg_type\": \"text\",\n    \"content\": {\n        \"text\": \u{201c}[{{tag}}] {{title}}\u{201d}\n    }\n}".to_string(),
             webhook_headers: vec![],
@@ -178,6 +181,7 @@ mod tests {
     fn adds_default_content_type_when_missing() {
         let headers = build_request_headers(&RemNotificationChannels {
             system: false,
+            webhook: true,
             webhook_url: "https://example.com/hook".to_string(),
             webhook_body_template: String::new(),
             webhook_headers: vec![RemWebhookHeader {

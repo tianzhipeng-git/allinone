@@ -523,7 +523,7 @@ function ReminderCard({
             <span className="truncate">{reminder.tag}</span>
           </span>
           <span className="flex items-center gap-1">
-            {reminder.notifications.webhookUrl && (
+            {reminder.notifications.webhook && (
               <ExternalLink className="size-3.5" />
             )}
             <span>{formatDateTime(reminder.nextTriggerAt, i18n.language)}</span>

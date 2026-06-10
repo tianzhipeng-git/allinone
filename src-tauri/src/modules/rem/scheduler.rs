@@ -51,7 +51,7 @@ fn process_reminder(
         channels.push("system".to_string());
     }
 
-    if !reminder.notifications.webhook_url.trim().is_empty() {
+    if reminder.notifications.webhook && !reminder.notifications.webhook_url.trim().is_empty() {
         channels.push("webhook".to_string());
     }
 
@@ -66,7 +66,7 @@ fn process_reminder(
         }
     }
 
-    if !reminder.notifications.webhook_url.trim().is_empty() {
+    if reminder.notifications.webhook && !reminder.notifications.webhook_url.trim().is_empty() {
         if let Err(e) = send_webhook(reminder, &triggered_at) {
             log::warn!("REM webhook failed for reminder {}: {e}", reminder.id);
         }

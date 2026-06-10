@@ -82,7 +82,7 @@ They cover:
 
 - Frequency classification from next trigger interval
 - Next trigger calculation for daily, weekly, monthly, yearly, and fixed
-  interval schedules
+  interval schedules (hours or days)
 - Cron expression generation for the editor preview
 
 The backend scheduler scans due reminders every 30 seconds. For each due
@@ -94,6 +94,7 @@ TanStack Query cache.
 
 Webhook configuration lives on each reminder's notification channels:
 
+- `webhook`: enable or disable webhook delivery
 - `webhook_url`: POST target
 - `webhook_body_template`: optional request body template
 - `webhook_headers`: optional custom headers (for example `Authorization`)

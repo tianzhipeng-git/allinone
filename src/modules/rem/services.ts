@@ -145,6 +145,7 @@ function mapBackendReminder(
     frequency: getFrequencyLevel(new Date(reminder.next_trigger_at)),
     notifications: {
       system: reminder.notifications.system,
+      webhook: reminder.notifications.webhook,
       webhookUrl: reminder.notifications.webhook_url,
       webhookBodyTemplate: reminder.notifications.webhook_body_template,
       webhookHeaders: reminder.notifications.webhook_headers.map(header => ({
@@ -180,6 +181,8 @@ function mapBackendSchedule(
     monthDay: schedule.month_day,
     month: schedule.month,
     intervalHours: schedule.interval_hours,
+    intervalDays: schedule.interval_days,
+    intervalUnit: schedule.interval_unit,
     cronExpression: schedule.cron_expression,
   }
 }
@@ -194,6 +197,7 @@ function toBackendDraft(draft: RemReminderDraft): BackendRemReminderDraft {
     schedule: toBackendSchedule(draft.schedule),
     notifications: {
       system: draft.notifications.system,
+      webhook: draft.notifications.webhook,
       webhook_url: draft.notifications.webhookUrl,
       webhook_body_template: draft.notifications.webhookBodyTemplate,
       webhook_headers: draft.notifications.webhookHeaders
@@ -217,6 +221,8 @@ function toBackendSchedule(
     month_day: schedule.monthDay,
     month: schedule.month,
     interval_hours: schedule.intervalHours,
+    interval_days: schedule.intervalDays,
+    interval_unit: schedule.intervalUnit,
     cron_expression: schedule.cronExpression,
   }
 }

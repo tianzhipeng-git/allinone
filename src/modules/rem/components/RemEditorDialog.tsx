@@ -28,8 +28,11 @@ import {
   updateCronExpression,
 } from '../schedule'
 import {
+  defaultNotificationChannels,
   defaultWebhookBodyTemplate,
+  defaultWebhookUrl,
   webhookTemplateVariables,
+  type RemIntervalUnit,
   type RemReminder,
   type RemReminderDraft,
   type RemScheduleMode,
@@ -167,22 +170,7 @@ export function RemEditorDialog({
               {draft.schedule.mode === 'cron' ? (
                 <CronFields draft={draft} setDraft={setDraft} />
               ) : (
-                <Field label={t('modules.rem.fields.intervalHours')}>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draft.schedule.intervalHours}
-                    onChange={event =>
-                      setDraft({
-                        ...draft,
-                        schedule: updateCronExpression({
-                          ...draft.schedule,
-                          intervalHours: Number(event.target.value),
-                        }),
-                      })
-                    }
-                  />
-                </Field>
+                <IntervalFields draft={draft} setDraft={setDraft} />
               )}
 
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
@@ -221,34 +209,47 @@ export function RemEditorDialog({
                   }
                 />
               </div>
-              <Field
-                label={t('modules.rem.fields.webhook')}
-                hint={
+              <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="rem-webhook-channel">
+                    {t('modules.rem.fields.webhook')}
+                  </Label>
                   <FieldHint label={t('modules.rem.tooltips.webhook.ariaLabel')}>
                     <WebhookHintContent />
                   </FieldHint>
-                }
-              >
-                <div className="relative">
-                  <Link className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    className="ps-9"
-                    value={draft.notifications.webhookUrl}
-                    placeholder={t('modules.rem.placeholders.webhook')}
-                    onChange={event =>
-                      setDraft({
-                        ...draft,
-                        notifications: {
-                          ...draft.notifications,
-                          webhookUrl: event.target.value,
-                        },
-                      })
-                    }
-                  />
                 </div>
-              </Field>
-              {draft.notifications.webhookUrl.trim() && (
+                <Switch
+                  id="rem-webhook-channel"
+                  checked={draft.notifications.webhook}
+                  onCheckedChange={webhook =>
+                    setDraft({
+                      ...draft,
+                      notifications: withWebhookToggle(draft.notifications, webhook),
+                    })
+                  }
+                />
+              </div>
+              {draft.notifications.webhook && (
                 <>
+                  <Field label={t('modules.rem.fields.webhookUrl')}>
+                    <div className="relative">
+                      <Link className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        className="ps-9"
+                        value={draft.notifications.webhookUrl}
+                        placeholder={defaultWebhookUrl}
+                        onChange={event =>
+                          setDraft({
+                            ...draft,
+                            notifications: {
+                              ...draft.notifications,
+                              webhookUrl: event.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </Field>
                   <Field label={t('modules.rem.fields.webhookBody')}>
                     <Textarea
                       className="min-h-32 font-mono text-xs"
@@ -355,6 +356,71 @@ export function RemEditorDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function IntervalFields({
+  draft,
+  setDraft,
+}: {
+  draft: RemReminderDraft
+  setDraft: (draft: RemReminderDraft) => void
+}) {
+  const { t } = useTranslation()
+  const intervalUnit = draft.schedule.intervalUnit
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex rounded-md border bg-muted/40 p-1">
+        {(['hours', 'days'] satisfies RemIntervalUnit[]).map(unit => (
+          <Button
+            key={unit}
+            type="button"
+            variant={intervalUnit === unit ? 'default' : 'ghost'}
+            className="h-8 flex-1"
+            onClick={() =>
+              setDraft({
+                ...draft,
+                schedule: updateCronExpression({
+                  ...draft.schedule,
+                  intervalUnit: unit,
+                }),
+              })
+            }
+          >
+            {t(`modules.rem.intervalUnit.${unit}`)}
+          </Button>
+        ))}
+      </div>
+      <Field
+        label={
+          intervalUnit === 'days'
+            ? t('modules.rem.fields.intervalDays')
+            : t('modules.rem.fields.intervalHours')
+        }
+      >
+        <Input
+          type="number"
+          min={1}
+          value={
+            intervalUnit === 'days'
+              ? draft.schedule.intervalDays
+              : draft.schedule.intervalHours
+          }
+          onChange={event =>
+            setDraft({
+              ...draft,
+              schedule: updateCronExpression({
+                ...draft.schedule,
+                ...(intervalUnit === 'days'
+                  ? { intervalDays: Number(event.target.value) }
+                  : { intervalHours: Number(event.target.value) }),
+              }),
+            })
+          }
+        />
+      </Field>
+    </div>
   )
 }
 
@@ -616,12 +682,7 @@ function reminderToDraft(
     tag: fallbackTag,
     enabled: true,
     schedule: createDefaultSchedule(),
-    notifications: {
-      system: true,
-      webhookUrl: '',
-      webhookBodyTemplate: '',
-      webhookHeaders: [],
-    },
+    notifications: defaultNotificationChannels(),
   }
 }
 
@@ -658,17 +719,50 @@ function normalizeDraft(draft: RemReminderDraft): RemReminderDraft {
     description: draft.description.trim(),
     tag: draft.tag.trim(),
     schedule,
-    notifications: {
-      ...draft.notifications,
-      webhookUrl: draft.notifications.webhookUrl.trim(),
-      webhookBodyTemplate: draft.notifications.webhookBodyTemplate.trim(),
-      webhookHeaders: draft.notifications.webhookHeaders
-        .filter(header => header.name.trim())
-        .map(header => ({
-          name: header.name.trim(),
-          value: header.value,
-        })),
-    },
+    notifications: normalizeNotifications(draft.notifications),
+  }
+}
+
+function withWebhookToggle(
+  notifications: RemReminderDraft['notifications'],
+  webhook: boolean
+): RemReminderDraft['notifications'] {
+  const nextNotifications = { ...notifications, webhook }
+
+  if (webhook && !nextNotifications.webhookUrl.trim()) {
+    nextNotifications.webhookUrl = defaultWebhookUrl
+  }
+
+  if (webhook && !nextNotifications.webhookBodyTemplate.trim()) {
+    nextNotifications.webhookBodyTemplate = defaultWebhookBodyTemplate
+  }
+
+  return nextNotifications
+}
+
+function normalizeNotifications(
+  notifications: RemReminderDraft['notifications']
+): RemReminderDraft['notifications'] {
+  if (!notifications.webhook) {
+    return {
+      ...notifications,
+      webhookUrl: '',
+      webhookBodyTemplate: '',
+      webhookHeaders: [],
+    }
+  }
+
+  return {
+    ...notifications,
+    webhookUrl: notifications.webhookUrl.trim() || defaultWebhookUrl,
+    webhookBodyTemplate:
+      notifications.webhookBodyTemplate.trim() || defaultWebhookBodyTemplate,
+    webhookHeaders: notifications.webhookHeaders
+      .filter(header => header.name.trim())
+      .map(header => ({
+        name: header.name.trim(),
+        value: header.value,
+      })),
   }
 }
 

@@ -90,4 +90,19 @@ describe('rem schedule helpers', () => {
     )
     expect(schedule.cronExpression).toBe('0 */2 * * *')
   })
+
+  it('uses interval days for day-based interval schedules', () => {
+    const schedule = updateCronExpression({
+      ...createDefaultSchedule(),
+      mode: 'interval',
+      intervalUnit: 'days',
+      intervalDays: 3,
+    })
+    const now = new Date('2026-06-08T09:00:00Z')
+
+    expect(getNextTriggerAt(schedule, now).toISOString()).toBe(
+      '2026-06-11T09:00:00.000Z'
+    )
+    expect(schedule.cronExpression).toBe('0 0 */3 * *')
+  })
 })

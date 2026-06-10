@@ -36,9 +36,12 @@ export function getNextTriggerAt(
   now = new Date()
 ): Date {
   if (schedule.mode === 'interval') {
-    return new Date(
-      now.getTime() + Math.max(schedule.intervalHours, 1) * HOUR_MS
-    )
+    const intervalMs =
+      schedule.intervalUnit === 'days'
+        ? Math.max(schedule.intervalDays, 1) * DAY_MS
+        : Math.max(schedule.intervalHours, 1) * HOUR_MS
+
+    return new Date(now.getTime() + intervalMs)
   }
 
   if (schedule.cadence === 'custom') {
@@ -64,6 +67,10 @@ export function getNextTriggerAt(
 
 export function buildCronExpression(schedule: RemScheduleConfig): string {
   if (schedule.mode === 'interval') {
+    if (schedule.intervalUnit === 'days') {
+      return `0 0 */${Math.max(schedule.intervalDays, 1)} * *`
+    }
+
     return `0 */${Math.max(schedule.intervalHours, 1)} * * *`
   }
 
@@ -102,6 +109,8 @@ export function createDefaultSchedule(): RemScheduleConfig {
     monthDay: 1,
     month: 1,
     intervalHours: 2,
+    intervalDays: 1,
+    intervalUnit: 'hours',
     cronExpression: '0 9 * * *',
   }
 }

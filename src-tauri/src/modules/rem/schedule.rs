@@ -3,14 +3,21 @@ use std::str::FromStr;
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, TimeZone, Utc};
 use cron::Schedule;
 
-use super::types::{RemCadence, RemScheduleConfig, RemScheduleMode};
+use super::types::{RemCadence, RemIntervalUnit, RemScheduleConfig, RemScheduleMode};
 
 pub fn get_next_trigger_at(
     schedule: &RemScheduleConfig,
     now: DateTime<Local>,
 ) -> Result<DateTime<Local>, String> {
     if matches!(schedule.mode, RemScheduleMode::Interval) {
-        return Ok(now + Duration::hours(i64::from(schedule.interval_hours.max(1))));
+        return match schedule.interval_unit {
+            RemIntervalUnit::Days => {
+                Ok(now + Duration::days(i64::from(schedule.interval_days.max(1))))
+            }
+            RemIntervalUnit::Hours => {
+                Ok(now + Duration::hours(i64::from(schedule.interval_hours.max(1))))
+            }
+        };
     }
 
     match schedule.cadence {
@@ -37,6 +44,7 @@ pub fn get_next_trigger_at(
 pub fn normalized_schedule(schedule: &RemScheduleConfig) -> RemScheduleConfig {
     let mut next = schedule.clone();
     next.interval_hours = next.interval_hours.max(1);
+    next.interval_days = next.interval_days.max(1);
     next.month_day = next.month_day.clamp(1, 31);
     next.month = next.month.clamp(1, 12);
     next.weekdays = normalized_weekdays(&next.weekdays);
@@ -50,7 +58,10 @@ pub fn normalized_schedule(schedule: &RemScheduleConfig) -> RemScheduleConfig {
 
 pub fn build_cron_expression(schedule: &RemScheduleConfig) -> String {
     if matches!(schedule.mode, RemScheduleMode::Interval) {
-        return format!("0 */{} * * *", schedule.interval_hours.max(1));
+        return match schedule.interval_unit {
+            RemIntervalUnit::Days => format!("0 0 */{} * *", schedule.interval_days.max(1)),
+            RemIntervalUnit::Hours => format!("0 */{} * * *", schedule.interval_hours.max(1)),
+        };
     }
 
     if matches!(schedule.cadence, RemCadence::Custom) {

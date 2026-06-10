@@ -50,7 +50,13 @@ export function formatSchedulePreview(
   t: TFunction
 ): string {
   if (schedule.mode === 'interval') {
-    return t('modules.rem.preview.interval', {
+    if (schedule.intervalUnit === 'days') {
+      return t('modules.rem.preview.intervalDays', {
+        count: Math.max(schedule.intervalDays, 1),
+      })
+    }
+
+    return t('modules.rem.preview.intervalHours', {
       count: Math.max(schedule.intervalHours, 1),
     })
   }

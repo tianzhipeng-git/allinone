@@ -258,7 +258,7 @@ function channelText(reminder: RemReminder, t: TFunction) {
     channels.push(t('modules.rem.channels.system'))
   }
 
-  if (reminder.notifications.webhookUrl) {
+  if (reminder.notifications.webhook) {
     channels.push(t('modules.rem.channels.webhook'))
   }
 

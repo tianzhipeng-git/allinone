@@ -46,6 +46,7 @@ pub fn generate_bindings() -> Builder<tauri::Wry> {
 /// Failure is non-fatal: a bundled debug build launched from Finder has a
 /// read-only working directory, so the relative export path is unwritable.
 /// Crashing the whole app there is unacceptable, so we log and continue.
+#[cfg(any(debug_assertions, test))]
 pub fn export_ts_bindings() {
     if let Err(e) = generate_bindings().export(
         specta_typescript::Typescript::default()

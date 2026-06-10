@@ -367,12 +367,13 @@ export type RecoveryError =
  */
 { type: "ParseError"; message: string }
 export type RemCadence = "daily" | "weekly" | "monthly" | "yearly" | "custom"
+export type RemIntervalUnit = "hours" | "days"
 export type RemLogEntry = { id: string; reminder_id: string; reminder_title: string; tag: string; triggered_at: string; status: RemLogStatus; note: string; completed_at: string | null; channels: string[] }
 export type RemLogStatus = "pending" | "confirmed" | "ignored"
-export type RemNotificationChannels = { system: boolean; webhook_url: string; webhook_body_template: string; webhook_headers: RemWebhookHeader[] }
+export type RemNotificationChannels = { system: boolean; webhook: boolean; webhook_url: string; webhook_body_template: string; webhook_headers: RemWebhookHeader[] }
 export type RemReminder = { id: string; title: string; description: string; tag: string; enabled: boolean; created_at: string; updated_at: string; next_trigger_at: string; schedule: RemScheduleConfig; notifications: RemNotificationChannels }
 export type RemReminderDraft = { id: string | null; title: string; description: string; tag: string; enabled: boolean; schedule: RemScheduleConfig; notifications: RemNotificationChannels }
-export type RemScheduleConfig = { mode: RemScheduleMode; cadence: RemCadence; time: string; weekdays: number[]; month_day: number; month: number; interval_hours: number; cron_expression: string }
+export type RemScheduleConfig = { mode: RemScheduleMode; cadence: RemCadence; time: string; weekdays: number[]; month_day: number; month: number; interval_hours: number; interval_days: number; interval_unit: RemIntervalUnit; cron_expression: string }
 export type RemScheduleMode = "cron" | "interval"
 export type RemState = { reminders: RemReminder[]; logs: RemLogEntry[] }
 export type RemWebhookHeader = { name: string; value: string }
