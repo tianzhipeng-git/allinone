@@ -1,11 +1,12 @@
 import { render } from '@/test/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CrepeMarkdownEditor } from './CrepeMarkdownEditor'
 
 const crepeMock = vi.hoisted(() => ({
   constructors: vi.fn(),
   create: vi.fn(() => Promise.resolve()),
   destroy: vi.fn(() => Promise.resolve()),
+  remove: vi.fn(() => Promise.resolve()),
   use: vi.fn(),
   on: vi.fn(),
 }))
@@ -17,6 +18,7 @@ vi.mock('@milkdown/crepe', () => ({
     }
 
     editor = {
+      remove: crepeMock.remove,
       use: crepeMock.use,
     }
 
@@ -31,6 +33,10 @@ vi.mock('@milkdown/crepe', () => ({
 }))
 
 describe('CrepeMarkdownEditor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('does not recreate Crepe when saved content refreshes the value prop', () => {
     const onChange = vi.fn()
     const { rerender } = render(
@@ -51,5 +57,17 @@ describe('CrepeMarkdownEditor', () => {
 
     expect(crepeMock.constructors).toHaveBeenCalledTimes(1)
     expect(crepeMock.destroy).not.toHaveBeenCalled()
+  })
+
+  it('disables remarkPreserveEmptyLinePlugin so line breaks stay as newlines', () => {
+    render(
+      <CrepeMarkdownEditor
+        value="original"
+        placeholder="Write"
+        onChange={vi.fn()}
+      />
+    )
+
+    expect(crepeMock.remove).toHaveBeenCalledTimes(1)
   })
 })

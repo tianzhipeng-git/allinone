@@ -1,4 +1,5 @@
 import { Crepe } from '@milkdown/crepe'
+import { remarkPreserveEmptyLinePlugin } from '@milkdown/kit/preset/commonmark'
 import { useEffect, useRef } from 'react'
 
 import {
@@ -44,6 +45,7 @@ export function CrepeMarkdownEditor({
     })
 
     crepe.editor.use(gtdMarkdownEditingPlugin)
+    void crepe.editor.remove(remarkPreserveEmptyLinePlugin)
 
     crepe.on(listener => {
       listener.markdownUpdated((_, markdown) => {
